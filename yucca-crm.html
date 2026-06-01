@@ -135,6 +135,14 @@
   .sync-dot.syncing { background: var(--gold); animation: pulse 1s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
+  /* CLIENT SEARCH DROPDOWN */
+  .client-search-wrap { position: relative; }
+  .client-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg2); border: 1px solid var(--gold); border-radius: 8px; z-index: 300; max-height: 200px; overflow-y: auto; margin-top: 4px; box-shadow: 0 8px 24px #00000044; }
+  .client-option { padding: 9px 12px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .client-option:last-child { border-bottom: none; }
+  .client-option:hover, .client-option.active { background: var(--gold-dim); color: var(--gold); }
+  .client-option .opt-phone { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
   /* HAMBURGER */
   .hamburger { display: none; background: none; border: none; cursor: pointer; padding: 6px; color: var(--text-dim); font-size: 20px; line-height: 1; }
   .sidebar-overlay { display: none; position: fixed; inset: 0; background: #00000066; z-index: 99; }
@@ -232,6 +240,68 @@ function Modal({ title, onClose, children, footer }) {
   );
 }
 
+// ─── REMINDERS ───────────────────────────────────────────────────────────
+function Reminders({ orders, clients }) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  // Последний заказ на каждого клиента
+  const lastOrder = {};
+  orders.filter(o => o.status === 'выполнен' && o.date).forEach(o => {
+    const key = o.clientId || o.clientName;
+    if (!lastOrder[key] || o.date > lastOrder[key].date) lastOrder[key] = o;
+  });
+
+  // Ищем тех, у кого годовщина заказа в ближайшие 3 дня (или уже прошла до 1 дня назад)
+  const reminders = [];
+  Object.values(lastOrder).forEach(o => {
+    const d = new Date(o.date);
+    // Годовщина в этом году
+    const ann = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+    let diff = Math.round((ann - today) / 86400000);
+    // Если годовщина уже была в этом году, берём следующий год
+    if (diff < -1) {
+      const ann2 = new Date(today.getFullYear() + 1, d.getMonth(), d.getDate());
+      diff = Math.round((ann2 - today) / 86400000);
+    }
+    if (diff >= -1 && diff <= 3) {
+      const client = clients.find(c => c.id === o.clientId);
+      reminders.push({ ...o, daysUntil: diff, clientLabel: client?.name || o.clientName });
+    }
+  });
+
+  reminders.sort((a, b) => a.daysUntil - b.daysUntil);
+
+  if (reminders.length === 0) return null;
+
+  const dayLabel = (d) => {
+    if (d === 0) return { text: 'Сегодня', color: 'var(--red)' };
+    if (d === 1) return { text: 'Завтра', color: 'var(--gold)' };
+    if (d === -1) return { text: 'Вчера', color: 'var(--text-dim)' };
+    return { text: `Через ${d} дня`, color: 'var(--blue)' };
+  };
+
+  return (
+    <div className="card" style={{marginBottom:24,border:'1px solid var(--gold-light)'}}>
+      <div className="card-title">🔔 Напоминания — пора написать клиенту</div>
+      {reminders.map(r => {
+        const { text, color } = dayLabel(r.daysUntil);
+        return (
+          <div key={r.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid var(--border)',flexWrap:'wrap',gap:8}}>
+            <div>
+              <div style={{fontWeight:500,fontSize:13}}>{r.clientLabel}</div>
+              <div style={{fontSize:11,color:'var(--text-dim)',marginTop:2}}>
+                Последний заказ: {fmtDate(r.date)} · {r.city} · {fmt(r.sellPrice)} {r.currency}
+              </div>
+            </div>
+            <span style={{color,fontWeight:600,fontSize:12,background:color+'22',padding:'4px 12px',borderRadius:20}}>{text}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── DASHBOARD ───────────────────────────────────────────────────────────
 function Dashboard({ orders, expenses, clients }) {
   const revenue = orders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+o.sellPrice,0);
@@ -257,6 +327,7 @@ function Dashboard({ orders, expenses, clients }) {
   const recentOrders = [...orders].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
   return (
     <div>
+      <Reminders orders={orders} clients={clients}/>
       <div className="stats-grid">
         <div className="stat-card"><div className="stat-label">Выручка</div><div className="stat-value gold">{fmt(revenue)} $</div><div className="stat-sub">{orders.filter(o=>o.status==='выполнен').length} выполненных заказов</div></div>
         <div className="stat-card"><div className="stat-label">Расходы</div><div className="stat-value red">{fmt(cogs+expTotal)} $</div><div className="stat-sub">Закупки + операционные</div></div>
@@ -343,7 +414,7 @@ function Orders({ orders, setOrders, clients }) {
       {showModal && (
         <Modal title={editId ? 'Редактировать заказ' : 'Новый заказ'} onClose={()=>{ setShowModal(false); setEditId(null); setForm(emptyForm); }} footer={<><button className="btn btn-ghost" onClick={()=>{ setShowModal(false); setEditId(null); setForm(emptyForm); }}>Отмена</button><button className="btn btn-gold" onClick={save}>Сохранить</button></>}>
           <div className="form-grid">
-            <div className="form-group"><label>Клиент</label><select value={form.clientId} onChange={e=>{ const c=clients.find(x=>x.id===e.target.value); setForm(f=>({...f,clientId:e.target.value,clientName:c?c.name:'',city:c?c.city:''})); }}><option value="">— выбрать —</option>{clients.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+            <div className="form-group"><label>Клиент</label><ClientSearch clients={clients} value={form.clientId} onChange={c => setForm(f=>({...f, clientId:c.id, clientName:c.name||c.phone, city:c.city||f.city}))}/></div>
             <div className="form-group"><label>Дата</label><input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/></div>
             <div className="form-group full"><label>Состав / Название букета</label><input placeholder="Розы 51шт, красные" value={form.item} onChange={e=>setForm(f=>({...f,item:e.target.value}))}/></div>
             <div className="form-group"><label>Поставщик</label><input placeholder="FloraAntalya" value={form.supplier} onChange={e=>setForm(f=>({...f,supplier:e.target.value}))}/></div>
@@ -528,6 +599,64 @@ function PnL({ orders, expenses }) {
           <div className="card"><div className="card-title">Ключевые показатели</div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[['Заказов',filtOrders.length,''],['Средний чек',filtOrders.length?Math.round(revenue/filtOrders.length):0,' $'],['Ср. маржа/заказ',filtOrders.length?Math.round(grossProfit/filtOrders.length):0,' $'],['ROI рекламы',filtExp.filter(e=>e.category==='Реклама').reduce((s,e)=>s+e.amount,0)?Math.round(revenue/filtExp.filter(e=>e.category==='Реклама').reduce((s,e)=>s+e.amount,0)*100):0,'%']].map(([l,v,suf])=>(<div key={l} style={{background:'var(--bg3)',borderRadius:8,padding:12}}><div style={{fontSize:10,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{l}</div><div style={{fontFamily:'Cormorant Garamond',fontSize:22,color:'var(--gold)'}}>{fmt(v)}{suf}</div></div>))}</div></div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── CLIENT SEARCH INPUT ─────────────────────────────────────────────────
+function ClientSearch({ clients, value, onChange }) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef(null);
+
+  // Закрываем при клике снаружи
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const selected = clients.find(c => c.id === value);
+  const displayQuery = open ? query : (selected ? (selected.name || selected.phone) : '');
+
+  const filtered = query.trim()
+    ? clients.filter(c =>
+        (c.name || '').toLowerCase().includes(query.toLowerCase()) ||
+        (c.phone || '').includes(query) ||
+        (c.city || '').toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 30)
+    : clients.slice(0, 30);
+
+  const select = (c) => {
+    onChange(c);
+    setQuery('');
+    setOpen(false);
+  };
+
+  return (
+    <div className="client-search-wrap" ref={ref}>
+      <input
+        placeholder="Поиск по имени, телефону, городу..."
+        value={displayQuery}
+        onChange={e => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => { setQuery(''); setOpen(true); }}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <div className="client-dropdown">
+          {filtered.map(c => (
+            <div key={c.id} className="client-option" onMouseDown={() => select(c)}>
+              <div>{c.name || <span style={{color:'var(--text-dim)'}}>Без имени</span>}</div>
+              <div className="opt-phone">{c.phone}{c.city ? ` · ${c.city}` : ''}</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {open && filtered.length === 0 && query && (
+        <div className="client-dropdown">
+          <div className="client-option" style={{color:'var(--text-dim)'}}>Клиент не найден</div>
+        </div>
+      )}
     </div>
   );
 }
