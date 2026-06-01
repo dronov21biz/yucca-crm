@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YUCCA CRM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --gold: #b8975a;
+    --gold-light: #d4b483;
+    --gold-dim: #b8975a33;
+    --bg: #0c0c0e;
+    --bg2: #131318;
+    --bg3: #1a1a22;
+    --border: #2a2a38;
+    --text: #e8e6e0;
+    --text-dim: #888890;
+    --green: #4caf7d;
+    --red: #e05c5c;
+    --blue: #5c8fe0;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; }
+  #root { display: flex; min-height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar { width: 220px; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; }
+  .sidebar-logo { padding: 28px 20px 20px; border-bottom: 1px solid var(--border); }
+  .sidebar-logo h1 { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 500; color: var(--gold); letter-spacing: 3px; }
+  .sidebar-logo span { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
+  .sidebar-nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+  .nav-section { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; padding: 12px 8px 6px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; color: var(--text-dim); transition: all 0.15s; font-size: 13.5px; }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: var(--gold-dim); color: var(--gold); }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); }
+
+  /* MAIN */
+  .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+  .topbar { padding: 20px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--bg); position: sticky; top: 0; z-index: 50; }
+  .topbar-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 400; color: var(--text); }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+  .content { padding: 28px 32px; flex: 1; }
+
+  /* BUTTONS */
+  .btn { padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; transition: all 0.15s; }
+  .btn-gold { background: var(--gold); color: #0c0c0e; }
+  .btn-gold:hover { background: var(--gold-light); }
+  .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-danger { background: var(--red); color: #fff; }
+
+  /* CARDS */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .card-title { font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--gold); margin-bottom: 16px; letter-spacing: 0.5px; }
+
+  /* STATS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .stat-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px; }
+  .stat-value { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 500; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.red { color: var(--red); }
+  .stat-value.gold { color: var(--gold); }
+  .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; padding: 10px 14px; border-bottom: 1px solid var(--border); font-weight: 500; }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--border)22; font-size: 13px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg3); }
+  .clickable-row { cursor: pointer; }
+
+  /* BADGE */
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-green { background: #4caf7d22; color: var(--green); }
+  .badge-red { background: #e05c5c22; color: var(--red); }
+  .badge-gold { background: var(--gold-dim); color: var(--gold); }
+  .badge-blue { background: #5c8fe022; color: var(--blue); }
+  .badge-gray { background: #ffffff11; color: var(--text-dim); }
+
+  /* FORM */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  input, select, textarea { background: var(--bg3); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 10px 12px; font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none; transition: border 0.15s; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+  textarea { resize: vertical; min-height: 80px; }
+  select option { background: var(--bg3); }
+
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: #00000088; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 580px; max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 24px 24px 0; display: flex; justify-content: space-between; align-items: center; }
+  .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--gold); }
+  .modal-body { padding: 20px 24px 24px; }
+  .modal-footer { padding: 0 24px 24px; display: flex; gap: 10px; justify-content: flex-end; }
+  .close-btn { background: none; border: none; color: var(--text-dim); font-size: 20px; cursor: pointer; padding: 4px; line-height: 1; }
+  .close-btn:hover { color: var(--text); }
+
+  /* TABS */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+  .tab { padding: 10px 20px; cursor: pointer; color: var(--text-dim); font-size: 13px; border-bottom: 2px solid transparent; transition: all 0.15s; margin-bottom: -1px; }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+  .tab:hover { color: var(--text); }
+
+  /* SEARCH */
+  .search-bar { position: relative; }
+  .search-bar input { padding-left: 36px; min-width: 240px; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 14px; }
+
+  /* PROFIT BAR */
+  .profit-bar { height: 6px; border-radius: 3px; background: var(--bg3); overflow: hidden; margin-top: 6px; }
+  .profit-fill { height: 100%; border-radius: 3px; background: var(--green); transition: width 0.5s; }
+
+  /* EMPTY */
+  .empty { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+
+  /* DETAIL */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .detail-item label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+  .detail-item .val { font-size: 14px; color: var(--text); }
+
+  /* FILTER ROW */
+  .filter-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  .tag-pill { display: inline-flex; align-items: center; gap: 4px; background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 11px; color: var(--text-dim); }
+  .tag-pill.vip { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .section-header h2 { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--text); }
+
+  .amount-pos { color: var(--green); font-weight: 500; }
+  .amount-neg { color: var(--red); font-weight: 500; }
+
+  .scrollable { max-height: 400px; overflow-y: auto; }
+
+  /* CHART */
+  .bar-chart { display: flex; gap: 8px; align-items: flex-end; height: 120px; padding: 0 4px; overflow: hidden; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; min-width: 0; }
+  .bar-wrap { flex: 1; display: flex; align-items: flex-end; width: 100%; overflow: hidden; gap: 2px; }
+  .bar { min-width: 0; flex: 1; border-radius: 3px 3px 0 0; min-height: 2px; max-height: 100%; transition: height 0.5s; }
+  .bar-label { font-size: 10px; color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+// ─── HELPERS ───────────────────────────────────────────────────────
+const uid = () => Math.random().toString(36).slice(2, 9);
+const fmt = (n) => new Intl.NumberFormat('ru-RU').format(Math.round(n || 0));
+const today = () => new Date().toISOString().split('T')[0];
+const MONTHS = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+const monthKey = (d) => d ? d.slice(0,7) : '';
+
+// ─── INITIAL DEMO DATA ──────────────────────────────────────────────
+const DEMO_CLIENTS = [
+  { id: uid(), name: 'Анна Петрова', phone: '+7 926 123-45-67', lang: 'RU', source: 'Instagram', vip: true, birthday: '1988-03-15', tags: 'постоянная', notes: 'Любит пионы и розы', city: 'Анталья', created: '2024-01-10' },
+  { id: uid(), name: 'Михаил Волков', phone: '+7 903 987-65-43', lang: 'RU', source: 'WhatsApp', vip: false, birthday: '1975-07-22', tags: '', notes: '', city: 'Стамбул', created: '2024-02-05' },
+  { id: uid(), name: 'Sofia Müller', phone: '+49 151 234 5678', lang: 'EN', source: 'Сайт', vip: true, birthday: '1992-11-03', tags: 'свадьба', notes: 'Немецкий клиент, работает на Пхукете', city: 'Пхукет', created: '2024-03-12' },
+  { id: uid(), name: 'Карим Алиев', phone: '+971 50 123 4567', lang: 'RU', source: 'Рекомендация', vip: false, birthday: '', tags: '', notes: '', city: 'Дубай', created: '2024-04-01' },
+];
+
+const generateOrders = (clients) => {
+  const flowers = ['Букет пионов', 'Розы 51шт', 'Тюльпаны микс', 'Орхидеи', 'Полевые цветы', 'Свадебный букет'];
+  const suppliers = ['FloraAntalya', 'IstanbulBlooms', 'PhuketFlowers', 'DubaiRoses'];
+  const statuses = ['выполнен', 'выполнен', 'выполнен', 'в процессе', 'отменён'];
+  const orders = [];
+  for(let i = 0; i < 18; i++) {
+    const client = clients[i % clients.length];
+    const sell = 1500 + Math.floor(Math.random() * 8000);
+    const buy = Math.floor(sell * (0.45 + Math.random() * 0.2));
+    const d = new Date(2024, Math.floor(i/2), (i*3 % 28)+1);
+    orders.push({
+      id: uid(),
+      clientId: client.id,
+      clientName: client.name,
+      city: client.city,
+      item: flowers[i % flowers.length],
+      supplier: suppliers[i % suppliers.length],
+      sellPrice: sell,
+      buyPrice: buy,
+      currency: 'USD',
+      status: statuses[i % statuses.length],
+      manager: i % 3 === 0 ? 'Юсуф' : i % 3 === 1 ? 'Алина' : 'Дмитрий',
+      date: d.toISOString().split('T')[0],
+      notes: '',
+    });
+  }
+  return orders;
+};
+
+const EXPENSE_CATS = ['Реклама', 'Закупка букетов', 'Зарплата', 'Прочее', 'Инструменты', 'Транспорт'];
+
+const generateExpenses = () => [
+  { id: uid(), category: 'Реклама', amount: 12000, currency: 'USD', date: '2024-04-05', note: 'Instagram Ads Анталья', city: 'Анталья' },
+  { id: uid(), category: 'Зарплата', amount: 25000, currency: 'USD', date: '2024-04-01', note: 'Алина — апрель', city: 'Анталья' },
+  { id: uid(), category: 'Реклама', amount: 8000, currency: 'USD', date: '2024-04-12', note: 'Google Ads Пхукет', city: 'Пхукет' },
+  { id: uid(), category: 'Инструменты', amount: 3500, currency: 'USD', date: '2024-04-15', note: 'Подписка CRM + хостинг', city: 'Анталья' },
+  { id: uid(), category: 'Зарплата', amount: 20000, currency: 'USD', date: '2024-05-01', note: 'Дмитрий — май', city: 'Стамбул' },
+  { id: uid(), category: 'Реклама', amount: 15000, currency: 'USD', date: '2024-05-10', note: 'Instagram Ads май', city: 'Анталья' },
+  { id: uid(), category: 'Прочее', amount: 2000, currency: 'USD', date: '2024-05-20', note: 'Упаковка и материалы', city: 'Анталья' },
+  { id: uid(), category: 'Транспорт', amount: 1500, currency: 'USD', date: '2024-05-22', note: 'Такси для встречи клиента', city: 'Стамбул' },
+];
+
+// ─── MODAL ───────────────────────────────────────────────────────────
+function Modal({ title, onClose, children, footer }) {
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-header">
+          <span className="modal-title">{title}</span>
+          <button className="close-btn" onClick={onClose}>✕</button>
+        </div>
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-footer">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── DASHBOARD ───────────────────────────────────────────────────────
+function Dashboard({ orders, expenses, clients }) {
+  const revenue = orders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+o.sellPrice,0);
+  const cogs = orders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+o.buyPrice,0);
+  const expTotal = expenses.reduce((s,e)=>s+e.amount,0);
+  const profit = revenue - cogs - expTotal;
+  const margin = revenue ? ((profit/revenue)*100).toFixed(1) : 0;
+
+  // monthly chart
+  const months = {};
+  orders.filter(o=>o.status==='выполнен').forEach(o => {
+    const m = monthKey(o.date);
+    if(!months[m]) months[m] = { rev: 0, cost: 0 };
+    months[m].rev += o.sellPrice;
+    months[m].cost += o.buyPrice;
+  });
+  expenses.forEach(e => {
+    const m = monthKey(e.date);
+    if(!months[m]) months[m] = { rev: 0, cost: 0 };
+    months[m].cost += e.amount;
+  });
+  const chartData = Object.entries(months).sort().slice(-6).map(([k,v])=>({ label: MONTHS[parseInt(k.split('-')[1])-1], rev: v.rev, cost: v.cost, profit: v.rev-v.cost }));
+  const maxVal = Math.max(...chartData.map(d=>d.rev), 1);
+
+  // expense breakdown
+  const expByCat = {};
+  expenses.forEach(e => { expByCat[e.category] = (expByCat[e.category]||0)+e.amount; });
+
+  const recentOrders = [...orders].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+
+  return (
+    <div>
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-label">Выручка</div>
+          <div className="stat-value gold">{fmt(revenue)} $</div>
+          <div className="stat-sub">{orders.filter(o=>o.status==='выполнен').length} выполненных заказов</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Расходы</div>
+          <div className="stat-value red">{fmt(cogs+expTotal)} $</div>
+          <div className="stat-sub">Закупки + операционные</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Прибыль</div>
+          <div className={`stat-value ${profit>=0?'green':'red'}`}>{fmt(profit)} $</div>
+          <div className="profit-bar"><div className="profit-fill" style={{width: Math.max(0,Math.min(100,margin))+'%'}}></div></div>
+          <div className="stat-sub">Маржа {margin}%</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Клиентов</div>
+          <div className="stat-value gold">{clients.length}</div>
+          <div className="stat-sub">{clients.filter(c=>c.vip).length} VIP клиентов</div>
+        </div>
+      </div>
+
+      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16}}>
+        <div className="card">
+          <div className="card-title">Доходы vs Расходы (по месяцам)</div>
+          {chartData.length === 0 ? <div className="empty"><div className="empty-icon">📊</div><p>Нет данных</p></div> :
+          <div className="bar-chart">
+            {chartData.map(d => (
+              <div key={d.label} className="bar-col">
+                <div className="bar-wrap" style={{gap:3}}>
+                  <div className="bar" style={{background:'var(--green)', height:(d.rev/maxVal*100)+'%'}}></div>
+                  <div className="bar" style={{background:'var(--red)', height:(d.cost/maxVal*100)+'%'}}></div>
+                </div>
+                <div className="bar-label">{d.label}</div>
+              </div>
+            ))}
+          </div>}
+          <div style={{display:'flex',gap:16,marginTop:12,fontSize:11,color:'var(--text-dim)'}}>
+            <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:8,height:8,background:'var(--green)',borderRadius:2,display:'inline-block'}}></span>Доход</span>
+            <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:8,height:8,background:'var(--red)',borderRadius:2,display:'inline-block'}}></span>Расходы</span>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-title">Расходы по категориям</div>
+          {Object.entries(expByCat).length === 0 ? <div className="empty"><div className="empty-icon">💰</div><p>Нет расходов</p></div> :
+          Object.entries(expByCat).sort((a,b)=>b[1]-a[1]).map(([cat, amt])=>(
+            <div key={cat} style={{marginBottom:12}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
+                <span>{cat}</span>
+                <span className="amount-neg">{fmt(amt)} $</span>
+              </div>
+              <div className="profit-bar">
+                <div style={{height:'100%',borderRadius:3,background:'var(--gold)',width:(amt/expTotal*100)+'%',transition:'width 0.5s'}}></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title">Последние заказы</div>
+        {recentOrders.length === 0 ? <div className="empty"><div className="empty-icon">📦</div><p>Нет заказов</p></div> :
+        <div className="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Дата</th><th>Клиент</th><th>Товар</th><th>Город</th><th>Продажа</th><th>Закупка</th><th>Прибыль</th><th>Статус</th>
+            </tr></thead>
+            <tbody>{recentOrders.map(o=>(
+              <tr key={o.id}>
+                <td>{o.date}</td>
+                <td>{o.clientName}</td>
+                <td style={{color:'var(--text-dim)'}}>{o.item}</td>
+                <td>{o.city}</td>
+                <td className="amount-pos">{fmt(o.sellPrice)} $</td>
+                <td className="amount-neg">{fmt(o.buyPrice)} $</td>
+                <td className={o.sellPrice-o.buyPrice>=0?'amount-pos':'amount-neg'}>{fmt(o.sellPrice-o.buyPrice)} $</td>
+                <td><StatusBadge status={o.status}/></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── STATUS BADGE ─────────────────────────────────────────────────────
+function StatusBadge({status}) {
+  const map = { 'выполнен':'badge-green','в процессе':'badge-blue','отменён':'badge-red','новый':'badge-gold' };
+  return <span className={`badge ${map[status]||'badge-gray'}`}>{status}</span>;
+}
+
+// ─── ORDERS ──────────────────────────────────────────────────────────
+function Orders({ orders, setOrders, clients }) {
+  const [showModal, setShowModal] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterCity, setFilterCity] = useState('');
+  const [form, setForm] = useState({ clientId:'', clientName:'', city:'', item:'', supplier:'', sellPrice:'', buyPrice:'', currency:'USD', status:'новый', manager:'', date:today(), notes:'' });
+
+  const cities = [...new Set(orders.map(o=>o.city).filter(Boolean))];
+
+  const filtered = orders.filter(o =>
+    (!search || o.clientName.toLowerCase().includes(search.toLowerCase()) || o.item.toLowerCase().includes(search.toLowerCase())) &&
+    (!filterStatus || o.status === filterStatus) &&
+    (!filterCity || o.city === filterCity)
+  ).sort((a,b)=>b.date.localeCompare(a.date));
+
+  const save = () => {
+    if(!form.item || !form.sellPrice) return;
+    const client = clients.find(c=>c.id===form.clientId);
+    setOrders(prev=>[...prev, { ...form, id:uid(), sellPrice:+form.sellPrice, buyPrice:+form.buyPrice, clientName: client ? client.name : form.clientName, city: client ? client.city : form.city }]);
+    setShowModal(false);
+    setForm({ clientId:'', clientName:'', city:'', item:'', supplier:'', sellPrice:'', buyPrice:'', currency:'USD', status:'новый', manager:'', date:today(), notes:'' });
+  };
+
+  const del = (id) => setOrders(prev=>prev.filter(o=>o.id!==id));
+
+  return (
+    <div>
+      <div className="section-header">
+        <h2>Заказы</h2>
+        <button className="btn btn-gold" onClick={()=>setShowModal(true)}>+ Новый заказ</button>
+      </div>
+
+      <div className="filter-row" style={{marginBottom:16}}>
+        <div className="search-bar">
+          <span className="search-icon">🔍</span>
+          <input placeholder="Поиск..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        </div>
+        <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{width:'auto'}}>
+          <option value="">Все статусы</option>
+          {['новый','в процессе','выполнен','отменён'].map(s=><option key={s}>{s}</option>)}
+        </select>
+        <select value={filterCity} onChange={e=>setFilterCity(e.target.value)} style={{width:'auto'}}>
+          <option value="">Все города</option>
+          {cities.map(c=><option key={c}>{c}</option>)}
+        </select>
+      </div>
+
+      <div className="card">
+        {filtered.length === 0 ? <div className="empty"><div className="empty-icon">📦</div><p>Заказов не найдено</p></div> :
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Дата</th><th>Клиент</th><th>Товар</th><th>Поставщик</th><th>Город</th><th>Продажа</th><th>Закупка</th><th>Маржа</th><th>Менеджер</th><th>Статус</th><th></th></tr></thead>
+            <tbody>{filtered.map(o=>(
+              <tr key={o.id}>
+                <td>{o.date}</td>
+                <td>{o.clientName}</td>
+                <td style={{color:'var(--text-dim)'}}>{o.item}</td>
+                <td style={{color:'var(--text-dim)'}}>{o.supplier}</td>
+                <td>{o.city}</td>
+                <td className="amount-pos">{fmt(o.sellPrice)} $</td>
+                <td className="amount-neg">{fmt(o.buyPrice)} $</td>
+                <td className={o.sellPrice-o.buyPrice>=0?'amount-pos':'amount-neg'}>{fmt(o.sellPrice-o.buyPrice)} $</td>
+                <td>{o.manager}</td>
+                <td><StatusBadge status={o.status}/></td>
+                <td><button className="btn btn-ghost btn-sm" onClick={()=>del(o.id)}>✕</button></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>}
+      </div>
+
+      {showModal && (
+        <Modal title="Новый заказ" onClose={()=>setShowModal(false)} footer={<><button className="btn btn-ghost" onClick={()=>setShowModal(false)}>Отмена</button><button className="btn btn-gold" onClick={save}>Сохранить</button></>}>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Клиент</label>
+              <select value={form.clientId} onChange={e=>{ const c=clients.find(x=>x.id===e.target.value); setForm(f=>({...f, clientId:e.target.value, clientName: c?c.name:'', city: c?c.city:''})); }}>
+                <option value="">— выбрать —</option>
+                {clients.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Дата</label>
+              <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/>
+            </div>
+            <div className="form-group full">
+              <label>Состав / Название букета</label>
+              <input placeholder="Розы 51шт, красные" value={form.item} onChange={e=>setForm(f=>({...f,item:e.target.value}))}/>
+            </div>
+            <div className="form-group">
+              <label>Поставщик</label>
+              <input placeholder="FloraAntalya" value={form.supplier} onChange={e=>setForm(f=>({...f,supplier:e.target.value}))}/>
+            </div>
+            <div className="form-group">
+              <label>Город</label>
+              <input placeholder="Анталья" value={form.city} onChange={e=>setForm(f=>({...f,city:e.target.value}))}/>
+            </div>
+            <div className="form-group">
+              <label>Цена продажи</label>
+              <input type="number" placeholder="5000" value={form.sellPrice} onChange={e=>setForm(f=>({...f,sellPrice:e.target.value}))}/>
+            </div>
+            <div className="form-group">
+              <label>Цена закупки</label>
+              <input type="number" placeholder="2500" value={form.buyPrice} onChange={e=>setForm(f=>({...f,buyPrice:e.target.value}))}/>
+            </div>
+            <div className="form-group">
+              <label>Валюта</label>
+              <select value={form.currency} onChange={e=>setForm(f=>({...f,currency:e.target.value}))}>
+                {['USD','EUR','TRY','AED','THB'].map(c=><option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Статус</label>
+              <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                {['новый','в процессе','выполнен','отменён'].map(s=><option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Менеджер</label>
+              <input placeholder="Юсуф" value={form.manager} onChange={e=>setForm(f=>({...f,manager:e.target.value}))}/>
+            </div>
+            <div className="form-group full">
+              <label>Заметка</label>
+              <textarea placeholder="Особые пожелания клиента..." value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ─── CLIENTS ──────────────────────────────────────────────────────────
+function Clients({ clients, setClients, orders }) {
+  const [showModal, setShowModal] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState('');
+  const [form, setForm] = useState({ name:'', phone:'', lang:'RU', source:'Instagram', vip:false, birthday:'', tags:'', notes:'', city:'' });
+
+  const filtered = clients.filter(c =>
+    !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
+  );
+
+  const save = () => {
+    if(!form.name) return;
+    setClients(prev=>[...prev, { ...form, id:uid(), created:today() }]);
+    setShowModal(false);
+    setForm({ name:'', phone:'', lang:'RU', source:'Instagram', vip:false, birthday:'', tags:'', notes:'', city:'' });
+  };
+
+  const clientOrders = selected ? orders.filter(o=>o.clientId===selected.id) : [];
+  const totalSpent = clientOrders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+o.sellPrice,0);
+
+  const SOURCES = ['Instagram','WhatsApp','Сайт','Рекомендация','TikTok','Google','Прочее'];
+  const LANGS = ['RU','EN','TR','AR','TH'];
+
+  return (
+    <div>
+      <div className="section-header">
+        <h2>Клиенты</h2>
+        <button className="btn btn-gold" onClick={()=>setShowModal(true)}>+ Добавить клиента</button>
+      </div>
+
+      <div className="filter-row" style={{marginBottom:16}}>
+        <div className="search-bar">
+          <span className="search-icon">🔍</span>
+          <input placeholder="Имя или телефон..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        </div>
+      </div>
+
+      <div className="card">
+        {filtered.length === 0 ? <div className="empty"><div className="empty-icon">👥</div><p>Клиентов не найдено</p></div> :
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Имя</th><th>Телефон</th><th>Город</th><th>Источник</th><th>Язык</th><th>Заказов</th><th>Метки</th></tr></thead>
+            <tbody>{filtered.map(c=>{
+              const cnt = orders.filter(o=>o.clientId===c.id).length;
+              return (
+                <tr key={c.id} className="clickable-row" onClick={()=>setSelected(c)}>
+                  <td><span style={{display:'flex',alignItems:'center',gap:8}}>{c.vip && <span className="tag-pill vip">★ VIP</span>}{c.name}</span></td>
+                  <td style={{color:'var(--text-dim)'}}>{c.phone}</td>
+                  <td>{c.city}</td>
+                  <td><span className="badge badge-blue">{c.source}</span></td>
+                  <td><span className="badge badge-gray">{c.lang}</span></td>
+                  <td>{cnt}</td>
+                  <td>{c.tags && c.tags.split(',').map(t=><span key={t} className="tag-pill" style={{marginRight:4}}>{t.trim()}</span>)}</td>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+        </div>}
+      </div>
+
+      {/* Client Detail Modal */}
+      {selected && (
+        <Modal title={selected.name} onClose={()=>setSelected(null)} footer={<><button className="btn btn-ghost" onClick={()=>{ setClients(p=>p.filter(c=>c.id!==selected.id)); setSelected(null); }}>Удалить</button><button className="btn btn-gold" onClick={()=>setSelected(null)}>Закрыть</button></>}>
+          <div className="detail-grid" style={{marginBottom:20}}>
+            <div className="detail-item"><label>Телефон</label><div className="val">{selected.phone}</div></div>
+            <div className="detail-item"><label>Город</label><div className="val">{selected.city}</div></div>
+            <div className="detail-item"><label>Источник</label><div className="val">{selected.source}</div></div>
+            <div className="detail-item"><label>Язык</label><div className="val">{selected.lang}</div></div>
+            <div className="detail-item"><label>День рождения</label><div className="val">{selected.birthday||'—'}</div></div>
+            <div className="detail-item"><label>Теги</label><div className="val">{selected.tags||'—'}</div></div>
+            {selected.notes && <div className="detail-item" style={{gridColumn:'1/-1'}}><label>Заметки</label><div className="val">{selected.notes}</div></div>}
+          </div>
+          <div style={{display:'flex',gap:16,marginBottom:16}}>
+            <div className="stat-card" style={{flex:1,padding:14}}>
+              <div className="stat-label">Заказов</div>
+              <div className="stat-value gold" style={{fontSize:22}}>{clientOrders.length}</div>
+            </div>
+            <div className="stat-card" style={{flex:1,padding:14}}>
+              <div className="stat-label">Потрачено</div>
+              <div className="stat-value green" style={{fontSize:22}}>{fmt(totalSpent)} $</div>
+            </div>
+          </div>
+          {clientOrders.length > 0 && (
+            <div>
+              <div style={{fontSize:12,color:'var(--text-dim)',marginBottom:10,textTransform:'uppercase',letterSpacing:1}}>История заказов</div>
+              <div className="scrollable">
+                {clientOrders.sort((a,b)=>b.date.localeCompare(a.date)).map(o=>(
+                  <div key={o.id} style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid var(--border)22',fontSize:13}}>
+                    <span style={{color:'var(--text-dim)'}}>{o.date}</span>
+                    <span>{o.item}</span>
+                    <span className="amount-pos">{fmt(o.sellPrice)} $</span>
+                    <StatusBadge status={o.status}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Modal>
+      )}
+
+      {/* Add Client Modal */}
+      {showModal && (
+        <Modal title="Новый клиент" onClose={()=>setShowModal(false)} footer={<><button className="btn btn-ghost" onClick={()=>setShowModal(false)}>Отмена</button><button className="btn btn-gold" onClick={save}>Сохранить</button></>}>
+          <div className="form-grid">
+            <div className="form-group full"><label>Имя</label><input placeholder="Анна Петрова" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/></div>
+            <div className="form-group"><label>Телефон / WhatsApp</label><input placeholder="+7 926 ..." value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))}/></div>
+            <div className="form-group"><label>Город</label><input placeholder="Анталья" value={form.city} onChange={e=>setForm(f=>({...f,city:e.target.value}))}/></div>
+            <div className="form-group"><label>Источник</label><select value={form.source} onChange={e=>setForm(f=>({...f,source:e.target.value}))}>{SOURCES.map(s=><option key={s}>{s}</option>)}</select></div>
+            <div className="form-group"><label>Язык</label><select value={form.lang} onChange={e=>setForm(f=>({...f,lang:e.target.value}))}>{LANGS.map(l=><option key={l}>{l}</option>)}</select></div>
+            <div className="form-group"><label>День рождения</label><input type="date" value={form.birthday} onChange={e=>setForm(f=>({...f,birthday:e.target.value}))}/></div>
+            <div className="form-group"><label>Теги</label><input placeholder="свадьба, постоянная" value={form.tags} onChange={e=>setForm(f=>({...f,tags:e.target.value}))}/></div>
+            <div className="form-group full" style={{flexDirection:'row',alignItems:'center',gap:10}}>
+              <input type="checkbox" id="vip" checked={form.vip} onChange={e=>setForm(f=>({...f,vip:e.target.checked}))} style={{width:'auto'}}/>
+              <label htmlFor="vip" style={{textTransform:'none',letterSpacing:0,fontSize:13,cursor:'pointer'}}>★ VIP клиент</label>
+            </div>
+            <div className="form-group full"><label>Заметки</label><textarea placeholder="Предпочтения, особые пожелания..." value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ─── EXPENSES ─────────────────────────────────────────────────────────
+function Expenses({ expenses, setExpenses }) {
+  const [showModal, setShowModal] = useState(false);
+  const [search, setSearch] = useState('');
+  const [filterCat, setFilterCat] = useState('');
+  const [form, setForm] = useState({ category:'Реклама', amount:'', currency:'USD', date:today(), note:'', city:'' });
+
+  const filtered = expenses.filter(e=>
+    (!search || e.note.toLowerCase().includes(search.toLowerCase())) &&
+    (!filterCat || e.category===filterCat)
+  ).sort((a,b)=>b.date.localeCompare(a.date));
+
+  const total = filtered.reduce((s,e)=>s+e.amount,0);
+
+  const save = () => {
+    if(!form.amount) return;
+    setExpenses(prev=>[...prev,{...form,id:uid(),amount:+form.amount}]);
+    setShowModal(false);
+    setForm({category:'Реклама',amount:'',currency:'USD',date:today(),note:'',city:''});
+  };
+
+  return (
+    <div>
+      <div className="section-header">
+        <h2>Расходы</h2>
+        <button className="btn btn-gold" onClick={()=>setShowModal(true)}>+ Добавить расход</button>
+      </div>
+
+      <div className="filter-row" style={{marginBottom:16}}>
+        <div className="search-bar"><span className="search-icon">🔍</span><input placeholder="Поиск..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
+        <select value={filterCat} onChange={e=>setFilterCat(e.target.value)} style={{width:'auto'}}>
+          <option value="">Все категории</option>
+          {EXPENSE_CATS.map(c=><option key={c}>{c}</option>)}
+        </select>
+        <div style={{marginLeft:'auto',fontSize:13,color:'var(--text-dim)'}}>Итого: <span className="amount-neg">{fmt(total)} $</span></div>
+      </div>
+
+      <div className="card">
+        {filtered.length===0 ? <div className="empty"><div className="empty-icon">💸</div><p>Расходов нет</p></div> :
+        <div className="table-wrap">
+          <table>
+            <thead><tr><th>Дата</th><th>Категория</th><th>Сумма</th><th>Город</th><th>Заметка</th><th></th></tr></thead>
+            <tbody>{filtered.map(e=>(
+              <tr key={e.id}>
+                <td>{e.date}</td>
+                <td><span className="badge badge-gold">{e.category}</span></td>
+                <td className="amount-neg">{fmt(e.amount)} $</td>
+                <td>{e.city||'—'}</td>
+                <td style={{color:'var(--text-dim)'}}>{e.note}</td>
+                <td><button className="btn btn-ghost btn-sm" onClick={()=>setExpenses(p=>p.filter(x=>x.id!==e.id))}>✕</button></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>}
+      </div>
+
+      {showModal && (
+        <Modal title="Новый расход" onClose={()=>setShowModal(false)} footer={<><button className="btn btn-ghost" onClick={()=>setShowModal(false)}>Отмена</button><button className="btn btn-gold" onClick={save}>Сохранить</button></>}>
+          <div className="form-grid">
+            <div className="form-group"><label>Категория</label><select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>{EXPENSE_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
+            <div className="form-group"><label>Дата</label><input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/></div>
+            <div className="form-group"><label>Сумма</label><input type="number" placeholder="5000" value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))}/></div>
+            <div className="form-group"><label>Валюта</label><select value={form.currency} onChange={e=>setForm(f=>({...f,currency:e.target.value}))}>{['USD','EUR','TRY','AED','THB'].map(c=><option key={c}>{c}</option>)}</select></div>
+            <div className="form-group"><label>Город</label><input placeholder="Анталья" value={form.city} onChange={e=>setForm(f=>({...f,city:e.target.value}))}/></div>
+            <div className="form-group full"><label>Описание</label><input placeholder="Instagram Ads — май" value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))}/></div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ─── P&L REPORT ───────────────────────────────────────────────────────
+function PnL({ orders, expenses }) {
+  const [period, setPeriod] = useState('all');
+  const [specificMonth, setSpecificMonth] = useState('');
+
+  const allMonths = useMemo(() => {
+    const keys = new Set();
+    [...orders, ...expenses].forEach(x => { if(x.date) keys.add(x.date.slice(0,7)); });
+    return [...keys].sort().reverse();
+  }, [orders, expenses]);
+
+  const filterByPeriod = (items, dateField) => {
+    const now = new Date();
+    return items.filter(item => {
+      if(period==='specific') return item[dateField] && item[dateField].startsWith(specificMonth);
+      if(period==='all') return true;
+      const d = new Date(item[dateField]);
+      if(period==='month') return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+      if(period==='quarter') {
+        const q = Math.floor(now.getMonth()/3);
+        return Math.floor(d.getMonth()/3)===q && d.getFullYear()===now.getFullYear();
+      }
+      return d.getFullYear()===now.getFullYear();
+    });
+  };
+
+  const filtOrders = filterByPeriod(orders.filter(o=>o.status==='выполнен'),'date');
+  const filtExp = filterByPeriod(expenses,'date');
+
+  const revenue = filtOrders.reduce((s,o)=>s+o.sellPrice,0);
+  const cogs = filtOrders.reduce((s,o)=>s+o.buyPrice,0);
+  const grossProfit = revenue - cogs;
+  const opEx = filtExp.reduce((s,e)=>s+e.amount,0);
+  const netProfit = grossProfit - opEx;
+  const margin = revenue ? ((netProfit/revenue)*100).toFixed(1) : 0;
+
+  const byCity = {};
+  filtOrders.forEach(o=>{
+    if(!byCity[o.city]) byCity[o.city]={rev:0,cost:0};
+    byCity[o.city].rev += o.sellPrice;
+    byCity[o.city].cost += o.buyPrice;
+  });
+
+  const bySource = {};
+  // We'll just show order managers as a proxy
+  filtOrders.forEach(o=>{
+    if(!bySource[o.manager||'—']) bySource[o.manager||'—']=0;
+    bySource[o.manager||'—'] += o.sellPrice;
+  });
+
+  const Row = ({label, value, sub, bold, color}) => (
+    <div style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid var(--border)',fontWeight:bold?'600':'400'}}>
+      <span style={{color: sub?'var(--text-dim)':undefined, paddingLeft: sub?16:0}}>{label}</span>
+      <span style={{color: color||undefined}}>{fmt(value)} $</span>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="section-header">
+        <h2>Отчёт P&L</h2>
+        <div style={{display:'flex',gap:8}}>
+          {[['all','Всё время'],['month','Тек. месяц'],['quarter','Квартал'],['year','Год']].map(([v,l])=>(
+            <button key={v} className={`btn ${period===v?'btn-gold':'btn-ghost'} btn-sm`} onClick={()=>{ setPeriod(v); setSpecificMonth(''); }}>{l}</button>
+          ))}
+          <select
+            value={period==='specific' ? specificMonth : ''}
+            onChange={e=>{ if(e.target.value){ setSpecificMonth(e.target.value); setPeriod('specific'); } }}
+            style={{height:32, fontSize:12, padding:'0 8px', borderRadius:8, border:'1px solid '+(period==='specific'?'var(--gold)':'var(--border)'), background:'var(--bg3)', color: period==='specific'?'var(--gold)':'var(--text-dim)', cursor:'pointer', outline:'none'}}
+          >
+            <option value="">Месяц...</option>
+            {allMonths.map(m => {
+              const [y, mo] = m.split('-');
+              return <option key={m} value={m}>{['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][parseInt(mo)-1]} {y}</option>;
+            })}
+          </select>
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+        <div className="card">
+          <div className="card-title">Отчёт о прибылях и убытках</div>
+          <Row label="Выручка" value={revenue} bold color="var(--green)"/>
+          <Row label="Закупка букетов" value={cogs} sub color="var(--red)"/>
+          <Row label="Валовая прибыль" value={grossProfit} bold color={grossProfit>=0?'var(--green)':'var(--red)'}/>
+          <div style={{height:8}}/>
+          <div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Операционные расходы</div>
+          {EXPENSE_CATS.map(cat=>{
+            const amt = filtExp.filter(e=>e.category===cat).reduce((s,e)=>s+e.amount,0);
+            return amt>0 ? <Row key={cat} label={cat} value={amt} sub color="var(--red)"/> : null;
+          })}
+          <Row label="Итого расходы" value={opEx} bold color="var(--red)"/>
+          <div style={{height:8}}/>
+          <Row label="Чистая прибыль" value={netProfit} bold color={netProfit>=0?'var(--green)':'var(--red)'}/>
+          <div style={{marginTop:12, padding:'12px', background:'var(--bg3)', borderRadius:8, textAlign:'center'}}>
+            <div style={{fontSize:11,color:'var(--text-dim)',marginBottom:4}}>Маржинальность</div>
+            <div style={{fontFamily:'Cormorant Garamond',fontSize:32,color:netProfit>=0?'var(--green)':'var(--red)'}}>{margin}%</div>
+          </div>
+        </div>
+
+        <div style={{display:'flex',flexDirection:'column',gap:16}}>
+          <div className="card">
+            <div className="card-title">По городам</div>
+            {Object.entries(byCity).length===0 ? <div style={{color:'var(--text-dim)',fontSize:12}}>Нет данных</div> :
+            Object.entries(byCity).sort((a,b)=>b[1].rev-a[1].rev).map(([city,d])=>(
+              <div key={city} style={{marginBottom:12}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:13,marginBottom:4}}>
+                  <span>{city}</span>
+                  <span className="amount-pos">{fmt(d.rev)} $</span>
+                </div>
+                <div className="profit-bar"><div className="profit-fill" style={{width:revenue?(d.rev/revenue*100)+'%':'0%'}}></div></div>
+              </div>
+            ))}
+          </div>
+
+          <div className="card">
+            <div className="card-title">По менеджерам</div>
+            {Object.entries(bySource).length===0 ? <div style={{color:'var(--text-dim)',fontSize:12}}>Нет данных</div> :
+            Object.entries(bySource).sort((a,b)=>b[1]-a[1]).map(([mgr,rev])=>(
+              <div key={mgr} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border)22',fontSize:13}}>
+                <span>{mgr}</span>
+                <span className="amount-pos">{fmt(rev)} $</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="card">
+            <div className="card-title">Ключевые показатели</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+              {[
+                ['Заказов', filtOrders.length, ''],
+                ['Средний чек', filtOrders.length ? Math.round(revenue/filtOrders.length) : 0, ' $'],
+                ['Ср. маржа/заказ', filtOrders.length ? Math.round((grossProfit)/filtOrders.length) : 0, ' $'],
+                ['ROI рекламы', filtExp.filter(e=>e.category==='Реклама').reduce((s,e)=>s+e.amount,0) ? Math.round(revenue/filtExp.filter(e=>e.category==='Реклама').reduce((s,e)=>s+e.amount,0)*100) : 0, '%'],
+              ].map(([l,v,suf])=>(
+                <div key={l} style={{background:'var(--bg3)',borderRadius:8,padding:12}}>
+                  <div style={{fontSize:10,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{l}</div>
+                  <div style={{fontFamily:'Cormorant Garamond',fontSize:22,color:'var(--gold)'}}>{fmt(v)}{suf}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── APP ──────────────────────────────────────────────────────────────
+function App() {
+  const initClients = DEMO_CLIENTS;
+  const [clients, setClients] = useState(initClients);
+  const [orders, setOrders] = useState(() => generateOrders(initClients));
+  const [expenses, setExpenses] = useState(generateExpenses);
+  const [page, setPage] = useState('dashboard');
+
+  const nav = [
+    { id:'dashboard', icon:'📊', label:'Дашборд' },
+    { id:'orders', icon:'📦', label:'Заказы' },
+    { id:'clients', icon:'👥', label:'Клиенты' },
+    { id:'expenses', icon:'💸', label:'Расходы' },
+    { id:'pnl', icon:'📈', label:'P&L Отчёт' },
+  ];
+
+  const pageTitle = nav.find(n=>n.id===page)?.label || '';
+
+  return (
+    <div id="app">
+      <div className="sidebar">
+        <div className="sidebar-logo">
+          <h1>YUCCA</h1>
+          <span>Flower CRM</span>
+        </div>
+        <div className="sidebar-nav">
+          <div className="nav-section">Навигация</div>
+          {nav.map(n=>(
+            <div key={n.id} className={`nav-item ${page===n.id?'active':''}`} onClick={()=>setPage(n.id)}>
+              <span className="nav-icon">{n.icon}</span>
+              {n.label}
+            </div>
+          ))}
+        </div>
+        <div className="sidebar-footer">
+          YUCCA Flowers · {new Date().getFullYear()}
+        </div>
+      </div>
+
+      <div className="main">
+        <div className="topbar">
+          <div className="topbar-title">{pageTitle}</div>
+          <div className="topbar-actions">
+            <span style={{fontSize:12,color:'var(--text-dim)'}}>🌸 {clients.length} клиентов · {orders.length} заказов</span>
+          </div>
+        </div>
+        <div className="content">
+          {page==='dashboard' && <Dashboard orders={orders} expenses={expenses} clients={clients}/>}
+          {page==='orders' && <Orders orders={orders} setOrders={setOrders} clients={clients}/>}
+          {page==='clients' && <Clients clients={clients} setClients={setClients} orders={orders}/>}
+          {page==='expenses' && <Expenses expenses={expenses} setExpenses={setExpenses}/>}
+          {page==='pnl' && <PnL orders={orders} expenses={expenses}/>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
