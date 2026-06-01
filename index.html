@@ -152,6 +152,12 @@
   @media (max-width: 480px) {
     .stats-grid { grid-template-columns: 1fr 1fr; }
   }
+  @media (max-width: 768px) {
+    html, body, #root, #app { overflow-x: hidden; max-width: 100vw; }
+    .resp-grid { grid-template-columns: 1fr !important; }
+    .hide-mob { display: none !important; }
+    .section-header .btn { font-size: 12px; padding: 7px 12px; }
+  }
 </style>
 </head>
 <body>
@@ -171,6 +177,7 @@ const today = () => new Date().toISOString().split('T')[0];
 const MONTHS = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
 const monthKey = (d) => d ? d.slice(0,7) : '';
 const API_READY = API_URL !== 'YOUR_SCRIPT_URL_HERE';
+const fmtDate = (d) => d ? String(d).split('T')[0] : '—';
 
 // ─── API ─────────────────────────────────────────────────────────────────
 const apiLoad = (sheet) =>
@@ -242,7 +249,7 @@ function Dashboard({ orders, expenses, clients }) {
         <div className="stat-card"><div className="stat-label">Прибыль</div><div className={`stat-value ${profit>=0?'green':'red'}`}>{fmt(profit)} $</div><div className="profit-bar"><div className="profit-fill" style={{width:Math.max(0,Math.min(100,margin))+'%'}}></div></div><div className="stat-sub">Маржа {margin}%</div></div>
         <div className="stat-card"><div className="stat-label">Клиентов</div><div className="stat-value gold">{clients.length}</div><div className="stat-sub">{clients.filter(c=>c.vip).length} VIP клиентов</div></div>
       </div>
-      <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16}}>
+      <div className="resp-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16}}>
         <div className="card">
           <div className="card-title">Доходы vs Расходы (по месяцам)</div>
           {chartData.length === 0 ? <div className="empty"><div className="empty-icon">📊</div><p>Нет данных</p></div> :
@@ -258,7 +265,7 @@ function Dashboard({ orders, expenses, clients }) {
       <div className="card">
         <div className="card-title">Последние заказы</div>
         {recentOrders.length === 0 ? <div className="empty"><div className="empty-icon">📦</div><p>Нет заказов</p></div> :
-        <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Клиент</th><th>Товар</th><th>Город</th><th>Продажа</th><th>Закупка</th><th>Прибыль</th><th>Статус</th></tr></thead><tbody>{recentOrders.map(o=>(<tr key={o.id}><td>{o.date}</td><td>{o.clientName}</td><td style={{color:'var(--text-dim)'}}>{o.item}</td><td>{o.city}</td><td className="amount-pos">{fmt(o.sellPrice)} $</td><td className="amount-neg">{fmt(o.buyPrice)} $</td><td className={o.sellPrice-o.buyPrice>=0?'amount-pos':'amount-neg'}>{fmt(o.sellPrice-o.buyPrice)} $</td><td><StatusBadge status={o.status}/></td></tr>))}</tbody></table></div>}
+        <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Клиент</th><th>Товар</th><th>Город</th><th>Продажа</th><th>Закупка</th><th>Прибыль</th><th>Статус</th></tr></thead><tbody>{recentOrders.map(o=>(<tr key={o.id}><td>{fmtDate(o.date)}</td><td>{o.clientName}</td><td style={{color:'var(--text-dim)'}}>{o.item}</td><td>{o.city}</td><td className="amount-pos">{fmt(o.sellPrice)} $</td><td className="amount-neg">{fmt(o.buyPrice)} $</td><td className={o.sellPrice-o.buyPrice>=0?'amount-pos':'amount-neg'}>{fmt(o.sellPrice-o.buyPrice)} $</td><td><StatusBadge status={o.status}/></td></tr>))}</tbody></table></div>}
       </div>
     </div>
   );
@@ -317,7 +324,7 @@ function Orders({ orders, setOrders, clients }) {
       </div>
       <div className="card">
         {filtered.length === 0 ? <div className="empty"><div className="empty-icon">📦</div><p>Заказов не найдено</p></div> :
-        <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Клиент</th><th>Товар</th><th>Поставщик</th><th>Город</th><th>Продажа</th><th>Закупка</th><th>Маржа</th><th>Менеджер</th><th>Статус</th><th></th></tr></thead><tbody>{filtered.map(o=>(<tr key={o.id}><td>{o.date}</td><td>{o.clientName}</td><td style={{color:'var(--text-dim)'}}>{o.item}</td><td style={{color:'var(--text-dim)'}}>{o.supplier}</td><td>{o.city}</td><td className="amount-pos">{fmt(o.sellPrice)} $</td><td className="amount-neg">{fmt(o.buyPrice)} $</td><td className={o.sellPrice-o.buyPrice>=0?'amount-pos':'amount-neg'}>{fmt(o.sellPrice-o.buyPrice)} $</td><td>{o.manager}</td><td><StatusBadge status={o.status}/></td><td style={{display:'flex',gap:4}}><button className="btn btn-ghost btn-sm" onClick={()=>openEdit(o)}>✏️</button><button className="btn btn-ghost btn-sm" onClick={()=>del(o.id)}>✕</button></td></tr>))}</tbody></table></div>}
+        <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Клиент</th><th className="hide-mob">Товар</th><th className="hide-mob">Поставщик</th><th className="hide-mob">Город</th><th>Продажа</th><th className="hide-mob">Закупка</th><th className="hide-mob">Маржа</th><th className="hide-mob">Менеджер</th><th>Статус</th><th></th></tr></thead><tbody>{filtered.map(o=>(<tr key={o.id}><td>{fmtDate(o.date)}</td><td>{o.clientName}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.item}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.supplier}</td><td className="hide-mob">{o.city}</td><td className="amount-pos">{fmt(o.sellPrice)} $</td><td className="hide-mob amount-neg">{fmt(o.buyPrice)} $</td><td className={`hide-mob ${o.sellPrice-o.buyPrice>=0?'amount-pos':'amount-neg'}`}>{fmt(o.sellPrice-o.buyPrice)} $</td><td className="hide-mob">{o.manager}</td><td><StatusBadge status={o.status}/></td><td style={{display:'flex',gap:4}}><button className="btn btn-ghost btn-sm" onClick={()=>openEdit(o)}>✏️</button><button className="btn btn-ghost btn-sm" onClick={()=>del(o.id)}>✕</button></td></tr>))}</tbody></table></div>}
       </div>
       {showModal && (
         <Modal title={editId ? 'Редактировать заказ' : 'Новый заказ'} onClose={()=>{ setShowModal(false); setEditId(null); setForm(emptyForm); }} footer={<><button className="btn btn-ghost" onClick={()=>{ setShowModal(false); setEditId(null); setForm(emptyForm); }}>Отмена</button><button className="btn btn-gold" onClick={save}>Сохранить</button></>}>
@@ -382,7 +389,7 @@ function Clients({ clients, setClients, orders }) {
             <div className="stat-card" style={{flex:1,padding:14}}><div className="stat-label">Заказов</div><div className="stat-value gold" style={{fontSize:22}}>{clientOrders.length}</div></div>
             <div className="stat-card" style={{flex:1,padding:14}}><div className="stat-label">Потрачено</div><div className="stat-value green" style={{fontSize:22}}>{fmt(totalSpent)} $</div></div>
           </div>
-          {clientOrders.length > 0 && <div><div style={{fontSize:12,color:'var(--text-dim)',marginBottom:10,textTransform:'uppercase',letterSpacing:1}}>История заказов</div><div className="scrollable">{clientOrders.sort((a,b)=>b.date.localeCompare(a.date)).map(o=>(<div key={o.id} style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid var(--border)22',fontSize:13}}><span style={{color:'var(--text-dim)'}}>{o.date}</span><span>{o.item}</span><span className="amount-pos">{fmt(o.sellPrice)} $</span><StatusBadge status={o.status}/></div>))}</div></div>}
+          {clientOrders.length > 0 && <div><div style={{fontSize:12,color:'var(--text-dim)',marginBottom:10,textTransform:'uppercase',letterSpacing:1}}>История заказов</div><div className="scrollable">{clientOrders.sort((a,b)=>b.date.localeCompare(a.date)).map(o=>(<div key={o.id} style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid var(--border)22',fontSize:13}}><span style={{color:'var(--text-dim)'}}>{fmtDate(o.date)}</span><span>{o.item}</span><span className="amount-pos">{fmt(o.sellPrice)} $</span><StatusBadge status={o.status}/></div>))}</div></div>}
         </Modal>
       )}
       {showModal && (
@@ -430,7 +437,7 @@ function Expenses({ expenses, setExpenses }) {
       </div>
       <div className="card">
         {filtered.length===0 ? <div className="empty"><div className="empty-icon">💸</div><p>Расходов нет</p></div> :
-        <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Категория</th><th>Сумма</th><th>Город</th><th>Заметка</th><th></th></tr></thead><tbody>{filtered.map(e=>(<tr key={e.id}><td>{e.date}</td><td><span className="badge badge-gold">{e.category}</span></td><td className="amount-neg">{fmt(e.amount)} $</td><td>{e.city||'—'}</td><td style={{color:'var(--text-dim)'}}>{e.note}</td><td><button className="btn btn-ghost btn-sm" onClick={()=>{ setExpenses(p=>p.filter(x=>x.id!==e.id)); apiDel('expenses', e.id); }}>✕</button></td></tr>))}</tbody></table></div>}
+        <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Категория</th><th>Сумма</th><th>Город</th><th>Заметка</th><th></th></tr></thead><tbody>{filtered.map(e=>(<tr key={e.id}><td>{fmtDate(e.date)}</td><td><span className="badge badge-gold">{e.category}</span></td><td className="amount-neg">{fmt(e.amount)} $</td><td>{e.city||'—'}</td><td style={{color:'var(--text-dim)'}}>{e.note}</td><td><button className="btn btn-ghost btn-sm" onClick={()=>{ setExpenses(p=>p.filter(x=>x.id!==e.id)); apiDel('expenses', e.id); }}>✕</button></td></tr>))}</tbody></table></div>}
       </div>
       {showModal && (
         <Modal title="Новый расход" onClose={()=>setShowModal(false)} footer={<><button className="btn btn-ghost" onClick={()=>setShowModal(false)}>Отмена</button><button className="btn btn-gold" onClick={save}>Сохранить</button></>}>
@@ -487,7 +494,7 @@ function PnL({ orders, expenses }) {
           </select>
         </div>
       </div>
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+      <div className="resp-grid" style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
         <div className="card">
           <div className="card-title">Отчёт о прибылях и убытках</div>
           <Row label="Выручка" value={revenue} bold color="var(--green)"/>
@@ -507,6 +514,150 @@ function PnL({ orders, expenses }) {
           <div className="card"><div className="card-title">Ключевые показатели</div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>{[['Заказов',filtOrders.length,''],['Средний чек',filtOrders.length?Math.round(revenue/filtOrders.length):0,' $'],['Ср. маржа/заказ',filtOrders.length?Math.round(grossProfit/filtOrders.length):0,' $'],['ROI рекламы',filtExp.filter(e=>e.category==='Реклама').reduce((s,e)=>s+e.amount,0)?Math.round(revenue/filtExp.filter(e=>e.category==='Реклама').reduce((s,e)=>s+e.amount,0)*100):0,'%']].map(([l,v,suf])=>(<div key={l} style={{background:'var(--bg3)',borderRadius:8,padding:12}}><div style={{fontSize:10,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>{l}</div><div style={{fontFamily:'Cormorant Garamond',fontSize:22,color:'var(--gold)'}}>{fmt(v)}{suf}</div></div>))}</div></div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── SALARY CALC ─────────────────────────────────────────────────────────
+// Правила: 5% стандарт; 7% если в день 3+ заказов И сумма дня >= 1000$
+const calcSalary = (orders) => {
+  const done = orders.filter(o => o.status === 'выполнен');
+  // группируем выполненные заказы по дате
+  const byDay = {};
+  done.forEach(o => {
+    const day = fmtDate(o.date);
+    if (!byDay[day]) byDay[day] = [];
+    byDay[day].push(o);
+  });
+  // определяем ставку для каждого заказа
+  const rates = {};
+  Object.values(byDay).forEach(dayOrders => {
+    const total = dayOrders.reduce((s, o) => s + o.sellPrice, 0);
+    const rate = (total >= 1000 && dayOrders.length >= 3) ? 0.07 : 0.05;
+    dayOrders.forEach(o => { rates[o.id] = rate; });
+  });
+  return rates;
+};
+
+function Managers({ orders }) {
+  const [period, setPeriod] = useState('all');
+  const [specificMonth, setSpecificMonth] = useState('');
+
+  const allMonths = useMemo(() => {
+    const keys = new Set();
+    orders.forEach(x => { if(x.date) keys.add(fmtDate(x.date).slice(0,7)); });
+    return [...keys].sort().reverse();
+  }, [orders]);
+
+  const filtered = orders.filter(o => {
+    if (o.status !== 'выполнен') return false;
+    const d = fmtDate(o.date);
+    if (period === 'specific') return d.startsWith(specificMonth);
+    if (period === 'all') return true;
+    const now = new Date();
+    const od = new Date(d);
+    if (period === 'month') return od.getMonth()===now.getMonth() && od.getFullYear()===now.getFullYear();
+    if (period === 'quarter') { const q=Math.floor(now.getMonth()/3); return Math.floor(od.getMonth()/3)===q && od.getFullYear()===now.getFullYear(); }
+    return od.getFullYear()===now.getFullYear();
+  });
+
+  const rates = calcSalary(filtered);
+
+  // группируем по менеджерам
+  const byMgr = {};
+  filtered.forEach(o => {
+    const m = o.manager || '—';
+    if (!byMgr[m]) byMgr[m] = { orders: [], salary5: 0, salary7: 0 };
+    byMgr[m].orders.push(o);
+    const rate = rates[o.id] || 0.05;
+    if (rate === 0.07) byMgr[m].salary7 += o.sellPrice * 0.07;
+    else byMgr[m].salary5 += o.sellPrice * 0.05;
+  });
+
+  // детализация по дням для выбранного менеджера
+  const [selectedMgr, setSelectedMgr] = useState(null);
+  const mgrOrders = selectedMgr ? filtered.filter(o => (o.manager||'—') === selectedMgr) : [];
+  const byDay = {};
+  mgrOrders.forEach(o => {
+    const d = fmtDate(o.date);
+    if (!byDay[d]) byDay[d] = [];
+    byDay[d].push(o);
+  });
+
+  const totalSalary = Object.values(byMgr).reduce((s, m) => s + m.salary5 + m.salary7, 0);
+
+  return (
+    <div>
+      <div className="section-header">
+        <h2>Зарплата менеджеров</h2>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          {[['all','Всё время'],['month','Тек. месяц'],['quarter','Квартал'],['year','Год']].map(([v,l])=>(
+            <button key={v} className={`btn ${period===v?'btn-gold':'btn-ghost'} btn-sm`} onClick={()=>{ setPeriod(v); setSpecificMonth(''); }}>{l}</button>
+          ))}
+          <select value={period==='specific'?specificMonth:''} onChange={e=>{ if(e.target.value){ setSpecificMonth(e.target.value); setPeriod('specific'); } }} style={{height:32,fontSize:12,padding:'0 8px',borderRadius:8,border:'1px solid '+(period==='specific'?'var(--gold)':'var(--border)'),background:'var(--bg3)',color:period==='specific'?'var(--gold)':'var(--text-dim)',cursor:'pointer',outline:'none'}}>
+            <option value="">Месяц...</option>
+            {allMonths.map(m=>{ const [y,mo]=m.split('-'); return <option key={m} value={m}>{['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'][parseInt(mo)-1]} {y}</option>; })}
+          </select>
+        </div>
+      </div>
+
+      {/* Правила */}
+      <div style={{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:10,padding:'12px 16px',marginBottom:20,fontSize:12,color:'var(--text-dim)',display:'flex',gap:20,flexWrap:'wrap'}}>
+        <span>⚡ <b style={{color:'var(--gold)'}}>7%</b> — день с 3+ заказами на $1000+</span>
+        <span>📌 <b style={{color:'var(--text-dim)'}}>5%</b> — все остальные заказы</span>
+      </div>
+
+      {/* Итого */}
+      <div className="stats-grid" style={{gridTemplateColumns:'repeat(3,1fr)',marginBottom:20}}>
+        <div className="stat-card"><div className="stat-label">К выплате</div><div className="stat-value gold">{fmt(totalSalary)} $</div></div>
+        <div className="stat-card"><div className="stat-label">Менеджеров</div><div className="stat-value gold">{Object.keys(byMgr).length}</div></div>
+        <div className="stat-card"><div className="stat-label">Заказов</div><div className="stat-value gold">{filtered.length}</div></div>
+      </div>
+
+      {/* Таблица по менеджерам */}
+      <div className="card" style={{marginBottom:16}}>
+        {Object.keys(byMgr).length === 0 ? <div className="empty"><div className="empty-icon">💼</div><p>Нет выполненных заказов</p></div> :
+        <div className="table-wrap"><table>
+          <thead><tr><th>Менеджер</th><th>Заказов</th><th>Выручка</th><th>По 5%</th><th>По 7%</th><th>Итого ЗП</th><th></th></tr></thead>
+          <tbody>{Object.entries(byMgr).sort((a,b)=>(b[1].salary5+b[1].salary7)-(a[1].salary5+a[1].salary7)).map(([mgr,d])=>(
+            <tr key={mgr}>
+              <td style={{fontWeight:500}}>{mgr}</td>
+              <td>{d.orders.length}</td>
+              <td className="amount-pos">{fmt(d.orders.reduce((s,o)=>s+o.sellPrice,0))} $</td>
+              <td style={{color:'var(--text-dim)',fontSize:12}}>{fmt(d.salary5)} $</td>
+              <td style={{color:'var(--gold)',fontSize:12}}>{fmt(d.salary7)} $</td>
+              <td style={{fontWeight:600,color:'var(--green)'}}>{fmt(d.salary5+d.salary7)} $</td>
+              <td><button className="btn btn-ghost btn-sm" onClick={()=>setSelectedMgr(selectedMgr===mgr?null:mgr)}>детали</button></td>
+            </tr>
+          ))}</tbody>
+        </table></div>}
+      </div>
+
+      {/* Детализация по дням */}
+      {selectedMgr && (
+        <div className="card">
+          <div className="card-title">Детализация — {selectedMgr}</div>
+          <div className="table-wrap"><table>
+            <thead><tr><th>Дата</th><th>Заказов в день</th><th>Сумма дня</th><th>Ставка</th><th>Заказ</th><th>Продажа</th><th>ЗП с заказа</th></tr></thead>
+            <tbody>{Object.entries(byDay).sort((a,b)=>b[0].localeCompare(a[0])).flatMap(([day, dayOrders])=>{
+              const dayTotal = dayOrders.reduce((s,o)=>s+o.sellPrice,0);
+              const dayAll = filtered.filter(o=>fmtDate(o.date)===day);
+              const rate = (dayAll.reduce((s,o)=>s+o.sellPrice,0) >= 1000 && dayAll.length >= 3) ? 0.07 : 0.05;
+              return dayOrders.map((o,i)=>(
+                <tr key={o.id}>
+                  {i===0 && <td rowSpan={dayOrders.length} style={{verticalAlign:'top',paddingTop:14}}>{day}</td>}
+                  {i===0 && <td rowSpan={dayOrders.length} style={{verticalAlign:'top',paddingTop:14}}>{dayAll.length}</td>}
+                  {i===0 && <td rowSpan={dayOrders.length} style={{verticalAlign:'top',paddingTop:14}}>{fmt(dayAll.reduce((s,o)=>s+o.sellPrice,0))} $</td>}
+                  {i===0 && <td rowSpan={dayOrders.length} style={{verticalAlign:'top',paddingTop:14}}><span className={`badge ${rate===0.07?'badge-gold':'badge-gray'}`}>{(rate*100).toFixed(0)}%</span></td>}
+                  <td style={{color:'var(--text-dim)',fontSize:12}}>{o.item}</td>
+                  <td className="amount-pos">{fmt(o.sellPrice)} $</td>
+                  <td style={{color:'var(--green)',fontWeight:500}}>{fmt(o.sellPrice*rate)} $</td>
+                </tr>
+              ));
+            })}</tbody>
+          </table></div>
+        </div>
+      )}
     </div>
   );
 }
@@ -540,6 +691,7 @@ function App() {
     { id:'clients', icon:'👥', label:'Клиенты' },
     { id:'expenses', icon:'💸', label:'Расходы' },
     { id:'pnl', icon:'📈', label:'P&L Отчёт' },
+    { id:'managers', icon:'💼', label:'Менеджеры' },
   ];
 
   if (loading) return (
@@ -580,6 +732,7 @@ function App() {
           {page==='clients' && <Clients clients={clients} setClients={setClients} orders={orders}/>}
           {page==='expenses' && <Expenses expenses={expenses} setExpenses={setExpenses}/>}
           {page==='pnl' && <PnL orders={orders} expenses={expenses}/>}
+          {page==='managers' && <Managers orders={orders}/>}
         </div>
       </div>
     </div>
