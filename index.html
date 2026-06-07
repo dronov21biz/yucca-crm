@@ -338,8 +338,9 @@ function Dashboard({ orders, expenses, clients }) {
 
   const revenue = filtOrders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+o.sellPrice,0);
   const cogs    = filtOrders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+o.buyPrice,0);
+  const deliveryTotal = filtOrders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+(o.deliveryCost||0),0);
   const expTotal = filtExp.reduce((s,e)=>s+e.amount,0);
-  const profit  = revenue - cogs - expTotal;
+  const profit  = revenue - cogs - deliveryTotal - expTotal;
   const margin  = revenue ? ((profit/revenue)*100).toFixed(1) : 0;
 
   const months = {};
@@ -421,7 +422,7 @@ function Orders({ orders, setOrders, clients }) {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterMonth, setFilterMonth] = useState('');
-  const emptyForm = { clientId:'', clientName:'', city:'', item:'', supplier:'', sellPrice:'', buyPrice:'', currency:'USD', status:'новый', manager:'', date:today(), notes:'' };
+  const emptyForm = { clientId:'', clientName:'', city:'', item:'', supplier:'', sellPrice:'', buyPrice:'', deliveryCost:'', currency:'USD', status:'новый', manager:'', date:today(), notes:'' };
   const [form, setForm] = useState(emptyForm);
   const cities = [...new Set(orders.map(o=>o.city).filter(Boolean))];
   const allMonths = useMemo(() => {
@@ -437,13 +438,13 @@ function Orders({ orders, setOrders, clients }) {
   const monthLabel = (m) => { if(!m) return ''; const [y,mo]=m.split('-'); return `${MONTHS[parseInt(mo)-1]} ${y}`; };
   const openEdit = (o) => {
     setEditId(o.id);
-    setForm({ clientId:o.clientId||'', clientName:o.clientName||'', city:o.city||'', item:o.item||'', supplier:o.supplier||'', sellPrice:o.sellPrice||'', buyPrice:o.buyPrice||'', currency:o.currency||'USD', status:o.status||'новый', manager:o.manager||'', date:o.date||today(), notes:o.notes||'' });
+    setForm({ clientId:o.clientId||'', clientName:o.clientName||'', city:o.city||'', item:o.item||'', supplier:o.supplier||'', sellPrice:o.sellPrice||'', buyPrice:o.buyPrice||'', deliveryCost:o.deliveryCost||'', currency:o.currency||'USD', status:o.status||'новый', manager:o.manager||'', date:o.date||today(), notes:o.notes||'' });
     setShowModal(true);
   };
   const save = () => {
     if(!form.item || !form.sellPrice) return;
     const client = clients.find(c=>c.id===form.clientId);
-    const base = { ...form, sellPrice: +form.sellPrice, buyPrice: +form.buyPrice, clientName: client ? client.name : form.clientName, city: client ? client.city : form.city };
+    const base = { ...form, sellPrice: +form.sellPrice, buyPrice: +form.buyPrice, deliveryCost: +form.deliveryCost||0, clientName: client ? client.name : form.clientName, city: client ? client.city : form.city };
     if (editId) {
       const updated = { ...base, id: editId };
       setOrders(prev => prev.map(o => o.id === editId ? updated : o));
@@ -470,7 +471,7 @@ function Orders({ orders, setOrders, clients }) {
       </div>
       <div className="card">
         {filtered.length === 0 ? <div className="empty"><div className="empty-icon">📦</div><p>Заказов не найдено</p></div> :
-        <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Клиент</th><th className="hide-mob">Товар</th><th className="hide-mob">Поставщик</th><th className="hide-mob">Город</th><th>Продажа</th><th className="hide-mob">Закупка</th><th className="hide-mob">Маржа</th><th className="hide-mob">Менеджер</th><th>Статус</th><th></th></tr></thead><tbody>{filtered.map(o=>(<tr key={o.id}><td>{fmtDate(o.date)}</td><td>{o.clientName}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.item}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.supplier}</td><td className="hide-mob">{o.city}</td><td className="amount-pos">{fmt(o.sellPrice)} $</td><td className="hide-mob amount-neg">{fmt(o.buyPrice)} $</td><td className={`hide-mob ${o.sellPrice-o.buyPrice>=0?'amount-pos':'amount-neg'}`}>{fmt(o.sellPrice-o.buyPrice)} $</td><td className="hide-mob">{o.manager}</td><td><StatusBadge status={o.status}/></td><td style={{display:'flex',gap:4}}><button className="btn btn-ghost btn-sm" onClick={()=>openEdit(o)}>✏️</button><button className="btn btn-ghost btn-sm" onClick={()=>del(o.id)}>✕</button></td></tr>))}</tbody></table></div>}
+        <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Клиент</th><th className="hide-mob">Товар</th><th className="hide-mob">Поставщик</th><th className="hide-mob">Город</th><th>Продажа</th><th className="hide-mob">Закупка</th><th className="hide-mob">Доставка</th><th className="hide-mob">Маржа</th><th className="hide-mob">Менеджер</th><th>Статус</th><th></th></tr></thead><tbody>{filtered.map(o=>(<tr key={o.id}><td>{fmtDate(o.date)}</td><td>{o.clientName}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.item}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.supplier}</td><td className="hide-mob">{o.city}</td><td className="amount-pos">{fmt(o.sellPrice)} $</td><td className="hide-mob amount-neg">{fmt(o.buyPrice)} $</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.deliveryCost>0?fmt(o.deliveryCost)+' $':'—'}</td><td className={`hide-mob ${o.sellPrice-o.buyPrice-(o.deliveryCost||0)>=0?'amount-pos':'amount-neg'}`}>{fmt(o.sellPrice-o.buyPrice-(o.deliveryCost||0))} $</td><td className="hide-mob">{o.manager}</td><td><StatusBadge status={o.status}/></td><td style={{display:'flex',gap:4}}><button className="btn btn-ghost btn-sm" onClick={()=>openEdit(o)}>✏️</button><button className="btn btn-ghost btn-sm" onClick={()=>del(o.id)}>✕</button></td></tr>))}</tbody></table></div>}
       </div>
       {showModal && (
         <Modal title={editId ? 'Редактировать заказ' : 'Новый заказ'} onClose={()=>{ setShowModal(false); setEditId(null); setForm(emptyForm); }} footer={<><button className="btn btn-ghost" onClick={()=>{ setShowModal(false); setEditId(null); setForm(emptyForm); }}>Отмена</button><button className="btn btn-gold" onClick={save}>Сохранить</button></>}>
@@ -482,6 +483,7 @@ function Orders({ orders, setOrders, clients }) {
             <div className="form-group"><label>Город</label><input placeholder="Анталья" value={form.city} onChange={e=>setForm(f=>({...f,city:e.target.value}))}/></div>
             <div className="form-group"><label>Цена продажи</label><input type="number" placeholder="5000" value={form.sellPrice} onChange={e=>setForm(f=>({...f,sellPrice:e.target.value}))}/></div>
             <div className="form-group"><label>Цена закупки</label><input type="number" placeholder="2500" value={form.buyPrice} onChange={e=>setForm(f=>({...f,buyPrice:e.target.value}))}/></div>
+            <div className="form-group"><label>Стоимость доставки</label><input type="number" placeholder="0" value={form.deliveryCost} onChange={e=>setForm(f=>({...f,deliveryCost:e.target.value}))}/></div>
             <div className="form-group"><label>Валюта</label><select value={form.currency} onChange={e=>setForm(f=>({...f,currency:e.target.value}))}>{['USD','EUR','TRY','AED','THB'].map(c=><option key={c}>{c}</option>)}</select></div>
             <div className="form-group"><label>Статус</label><select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>{['новый','в процессе','выполнен','отменён'].map(s=><option key={s}>{s}</option>)}</select></div>
             <div className="form-group"><label>Менеджер</label><input placeholder="Юсуф" value={form.manager} onChange={e=>setForm(f=>({...f,manager:e.target.value}))}/></div>
@@ -662,7 +664,8 @@ function PnL({ orders, expenses }) {
   const filtExp = filterByPeriod(expenses,'date');
   const revenue = filtOrders.reduce((s,o)=>s+o.sellPrice,0);
   const cogs = filtOrders.reduce((s,o)=>s+o.buyPrice,0);
-  const grossProfit = revenue - cogs;
+  const deliveryTotal = filtOrders.reduce((s,o)=>s+(o.deliveryCost||0),0);
+  const grossProfit = revenue - cogs - deliveryTotal;
   const opEx = filtExp.reduce((s,e)=>s+e.amount,0);
   const netProfit = grossProfit - opEx;
   const margin = revenue ? ((netProfit/revenue)*100).toFixed(1) : 0;
@@ -686,6 +689,7 @@ function PnL({ orders, expenses }) {
           <div className="card-title">Отчёт о прибылях и убытках</div>
           <Row label="Выручка" value={revenue} bold color="var(--green)"/>
           <Row label="Закупка букетов" value={cogs} sub color="var(--red)"/>
+          {deliveryTotal>0 && <Row label="Доставка" value={deliveryTotal} sub color="var(--red)"/>}
           <Row label="Валовая прибыль" value={grossProfit} bold color={grossProfit>=0?'var(--green)':'var(--red)'}/>
           <div style={{height:8}}/>
           <div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Операционные расходы</div>
@@ -927,7 +931,7 @@ function App() {
     Promise.all([apiLoad('clients'), apiLoad('orders'), apiLoad('expenses')])
       .then(([c, o, e]) => {
         setClients((Array.isArray(c)?c:[]).map(x=>({...x, vip: x.vip==='true'||x.vip===true})));
-        setOrders((Array.isArray(o)?o:[]).map(x=>({...x, sellPrice:+x.sellPrice||0, buyPrice:+x.buyPrice||0})));
+        setOrders((Array.isArray(o)?o:[]).map(x=>({...x, sellPrice:+x.sellPrice||0, buyPrice:+x.buyPrice||0, deliveryCost:+x.deliveryCost||0})));
         setExpenses((Array.isArray(e)?e:[]).map(x=>({...x, amount:+x.amount||0})));
         setSynced(true);
       })
