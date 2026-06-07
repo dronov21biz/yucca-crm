@@ -930,7 +930,7 @@ function App() {
     if (!API_READY) return;
     Promise.all([apiLoad('clients'), apiLoad('orders'), apiLoad('expenses')])
       .then(([c, o, e]) => {
-        setClients((Array.isArray(c)?c:[]).map(x=>({...x, vip: x.vip==='true'||x.vip===true})));
+        setClients((Array.isArray(c)?c:[]).map(x=>({...x, vip: x.vip==='true'||x.vip===true, phone: (x.phone||'').replace(/^'+/, '')})));
         setOrders((Array.isArray(o)?o:[]).map(x=>({...x, sellPrice:+x.sellPrice||0, buyPrice:+x.buyPrice||0, deliveryCost:+x.deliveryCost||0})));
         setExpenses((Array.isArray(e)?e:[]).map(x=>({...x, amount:+x.amount||0})));
         setSynced(true);
