@@ -224,7 +224,7 @@ const fmtDate = (d) => d ? String(d).split('T')[0] : '—';
 
 // ─── API ─────────────────────────────────────────────────────────────────
 const apiLoad = (sheet) =>
-  fetch(`${API_URL}?action=get&sheet=${sheet}&t=${Date.now()}`)
+  fetch(`${API_URL}?sheet=${sheet}&t=${Date.now()}`)
     .then(r => r.json())
     .catch(() => []);
 
