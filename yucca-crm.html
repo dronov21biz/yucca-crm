@@ -341,9 +341,8 @@ function Dashboard({ orders, expenses, clients }) {
 
   const revenue = filtOrders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+o.sellPrice,0);
   const cogs    = filtOrders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+o.buyPrice,0);
-  const deliveryTotal = filtOrders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+(o.deliveryCost||0),0);
   const expTotal = filtExp.reduce((s,e)=>s+e.amount,0);
-  const profit  = revenue - cogs - deliveryTotal - expTotal;
+  const profit  = revenue - cogs - expTotal;
   const margin  = revenue ? ((profit/revenue)*100).toFixed(1) : 0;
 
   const months = {};
@@ -474,7 +473,7 @@ function Orders({ orders, setOrders, clients }) {
       </div>
       <div className="card">
         {filtered.length === 0 ? <div className="empty"><div className="empty-icon">📦</div><p>Заказов не найдено</p></div> :
-        <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Клиент</th><th className="hide-mob">Товар</th><th className="hide-mob">Поставщик</th><th className="hide-mob">Город</th><th>Продажа</th><th className="hide-mob">Закупка</th><th className="hide-mob">Доставка</th><th className="hide-mob">Маржа</th><th className="hide-mob">Менеджер</th><th>Статус</th><th></th></tr></thead><tbody>{filtered.map(o=>(<tr key={o.id}><td>{fmtDate(o.date)}</td><td>{o.clientName}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.item}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.supplier}</td><td className="hide-mob">{o.city}</td><td className="amount-pos">{fmt(o.sellPrice)} $</td><td className="hide-mob amount-neg">{fmt(o.buyPrice)} $</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.deliveryCost>0?fmt(o.deliveryCost)+' $':'—'}</td><td className={`hide-mob ${o.sellPrice-o.buyPrice-(o.deliveryCost||0)>=0?'amount-pos':'amount-neg'}`}>{fmt(o.sellPrice-o.buyPrice-(o.deliveryCost||0))} $</td><td className="hide-mob">{o.manager}</td><td><StatusBadge status={o.status}/></td><td style={{display:'flex',gap:4}}><button className="btn btn-ghost btn-sm" onClick={()=>openEdit(o)}>✏️</button><button className="btn btn-ghost btn-sm" onClick={()=>del(o.id)}>✕</button></td></tr>))}</tbody></table></div>}
+        <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Клиент</th><th className="hide-mob">Товар</th><th className="hide-mob">Поставщик</th><th className="hide-mob">Город</th><th>Продажа</th><th className="hide-mob">Закупка</th><th className="hide-mob">Доставка</th><th className="hide-mob">Маржа</th><th className="hide-mob">Менеджер</th><th>Статус</th><th></th></tr></thead><tbody>{filtered.map(o=>(<tr key={o.id}><td>{fmtDate(o.date)}</td><td>{o.clientName}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.item}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.supplier}</td><td className="hide-mob">{o.city}</td><td className="amount-pos">{fmt(o.sellPrice)} $</td><td className="hide-mob amount-neg">{fmt(o.buyPrice)} $</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.deliveryCost>0?fmt(o.deliveryCost)+' $':'—'}</td><td className={`hide-mob ${o.sellPrice-o.buyPrice>=0?'amount-pos':'amount-neg'}`}>{fmt(o.sellPrice-o.buyPrice)} $</td><td className="hide-mob">{o.manager}</td><td><StatusBadge status={o.status}/></td><td style={{display:'flex',gap:4}}><button className="btn btn-ghost btn-sm" onClick={()=>openEdit(o)}>✏️</button><button className="btn btn-ghost btn-sm" onClick={()=>del(o.id)}>✕</button></td></tr>))}</tbody></table></div>}
       </div>
       {showModal && (
         <Modal title={editId ? 'Редактировать заказ' : 'Новый заказ'} onClose={closeModal} footer={<><button className="btn btn-ghost" onClick={closeModal} disabled={saving}>Отмена</button><button className="btn btn-gold" onClick={save} disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить'}</button></>}>
@@ -665,8 +664,7 @@ function PnL({ orders, expenses }) {
   const filtExp = filterByPeriod(expenses,'date');
   const revenue = filtOrders.reduce((s,o)=>s+o.sellPrice,0);
   const cogs = filtOrders.reduce((s,o)=>s+o.buyPrice,0);
-  const deliveryTotal = filtOrders.reduce((s,o)=>s+(o.deliveryCost||0),0);
-  const grossProfit = revenue - cogs - deliveryTotal;
+  const grossProfit = revenue - cogs;
   const opEx = filtExp.reduce((s,e)=>s+e.amount,0);
   const netProfit = grossProfit - opEx;
   const margin = revenue ? ((netProfit/revenue)*100).toFixed(1) : 0;
@@ -690,7 +688,6 @@ function PnL({ orders, expenses }) {
           <div className="card-title">Отчёт о прибылях и убытках</div>
           <Row label="Выручка" value={revenue} bold color="var(--green)"/>
           <Row label="Закупка букетов" value={cogs} sub color="var(--red)"/>
-          {deliveryTotal>0 && <Row label="Доставка" value={deliveryTotal} sub color="var(--red)"/>}
           <Row label="Валовая прибыль" value={grossProfit} bold color={grossProfit>=0?'var(--green)':'var(--red)'}/>
           <div style={{height:8}}/>
           <div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1,marginBottom:4}}>Операционные расходы</div>
