@@ -538,19 +538,6 @@ function Clients({ clients, setClients, orders }) {
   const SOURCES = ['Instagram','WhatsApp','Сайт','Рекомендация','TikTok','Google','Прочее'];
   const LANGS = ['RU','EN','TR','AR','TH'];
 
-  const ClientForm = () => (
-    <div className="form-grid">
-      <div className="form-group full"><label>Имя</label><input placeholder="Анна Петрова" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/></div>
-      <div className="form-group"><label>Телефон / WhatsApp</label><input placeholder="+7 926 ..." value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))}/></div>
-      <div className="form-group"><label>Город</label><input placeholder="Анталья" value={form.city} onChange={e=>setForm(f=>({...f,city:e.target.value}))}/></div>
-      <div className="form-group"><label>Источник</label><select value={form.source} onChange={e=>setForm(f=>({...f,source:e.target.value}))}>{SOURCES.map(s=><option key={s}>{s}</option>)}</select></div>
-      <div className="form-group"><label>Язык</label><select value={form.lang} onChange={e=>setForm(f=>({...f,lang:e.target.value}))}>{LANGS.map(l=><option key={l}>{l}</option>)}</select></div>
-      <div className="form-group"><label>День рождения</label><input type="date" value={form.birthday} onChange={e=>setForm(f=>({...f,birthday:e.target.value}))}/></div>
-      <div className="form-group"><label>Теги</label><input placeholder="свадьба, постоянная" value={form.tags} onChange={e=>setForm(f=>({...f,tags:e.target.value}))}/></div>
-      <div className="form-group full" style={{flexDirection:'row',alignItems:'center',gap:10}}><input type="checkbox" id="vip-cb" checked={form.vip} onChange={e=>setForm(f=>({...f,vip:e.target.checked}))} style={{width:'auto'}}/><label htmlFor="vip-cb" style={{textTransform:'none',letterSpacing:0,fontSize:13,cursor:'pointer'}}>★ VIP клиент</label></div>
-      <div className="form-group full"><label>Заметки</label><textarea placeholder="Предпочтения, особые пожелания..." value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></div>
-    </div>
-  );
 
   return (
     <div>
@@ -597,7 +584,17 @@ function Clients({ clients, setClients, orders }) {
 
       {showModal && (
         <Modal title={editId ? 'Редактировать клиента' : 'Новый клиент'} onClose={closeModal} footer={<><button className="btn btn-ghost" onClick={closeModal} disabled={saving}>Отмена</button><button className="btn btn-gold" onClick={save} disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить'}</button></>}>
-          <ClientForm/>
+          <div className="form-grid">
+            <div className="form-group full"><label>Имя</label><input placeholder="Анна Петрова" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/></div>
+            <div className="form-group"><label>Телефон / WhatsApp</label><input placeholder="+7 926 ..." value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))}/></div>
+            <div className="form-group"><label>Город</label><input placeholder="Анталья" value={form.city} onChange={e=>setForm(f=>({...f,city:e.target.value}))}/></div>
+            <div className="form-group"><label>Источник</label><select value={form.source} onChange={e=>setForm(f=>({...f,source:e.target.value}))}>{SOURCES.map(s=><option key={s}>{s}</option>)}</select></div>
+            <div className="form-group"><label>Язык</label><select value={form.lang} onChange={e=>setForm(f=>({...f,lang:e.target.value}))}>{LANGS.map(l=><option key={l}>{l}</option>)}</select></div>
+            <div className="form-group"><label>День рождения</label><input type="date" value={form.birthday} onChange={e=>setForm(f=>({...f,birthday:e.target.value}))}/></div>
+            <div className="form-group"><label>Теги</label><input placeholder="свадьба, постоянная" value={form.tags} onChange={e=>setForm(f=>({...f,tags:e.target.value}))}/></div>
+            <div className="form-group full" style={{flexDirection:'row',alignItems:'center',gap:10}}><input type="checkbox" id="vip-cb" checked={form.vip} onChange={e=>setForm(f=>({...f,vip:e.target.checked}))} style={{width:'auto'}}/><label htmlFor="vip-cb" style={{textTransform:'none',letterSpacing:0,fontSize:13,cursor:'pointer'}}>★ VIP клиент</label></div>
+            <div className="form-group full"><label>Заметки</label><textarea placeholder="Предпочтения, особые пожелания..." value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></div>
+          </div>
         </Modal>
       )}
     </div>
