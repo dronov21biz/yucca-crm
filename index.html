@@ -229,21 +229,21 @@ const apiLoad = (sheet) =>
     .catch(() => []);
 
 const apiAdd = (sheet, data) => {
-  if (!API_READY) return;
+  if (!API_READY) return Promise.resolve({ ok: false });
   const url = `${API_URL}?action=add&sheet=${encodeURIComponent(sheet)}&data=${encodeURIComponent(JSON.stringify(data))}&t=${Date.now()}`;
-  fetch(url).catch(() => {});
+  return fetch(url).then(r => r.json()).catch(() => ({ ok: false }));
 };
 
 const apiDel = (sheet, id) => {
-  if (!API_READY) return;
+  if (!API_READY) return Promise.resolve({ ok: false });
   const url = `${API_URL}?action=delete&sheet=${encodeURIComponent(sheet)}&id=${encodeURIComponent(id)}&t=${Date.now()}`;
-  fetch(url).catch(() => {});
+  return fetch(url).then(r => r.json()).catch(() => ({ ok: false }));
 };
 
 const apiUpdate = (sheet, id, data) => {
-  if (!API_READY) return;
+  if (!API_READY) return Promise.resolve({ ok: false });
   const url = `${API_URL}?action=update&sheet=${encodeURIComponent(sheet)}&id=${encodeURIComponent(id)}&data=${encodeURIComponent(JSON.stringify(data))}&t=${Date.now()}`;
-  fetch(url).catch(() => {});
+  return fetch(url).then(r => r.json()).catch(() => ({ ok: false }));
 };
 
 const EXPENSE_CATS = ['Реклама', 'Закупка букетов', 'Зарплата', 'Прочее', 'Инструменты', 'Транспорт'];
@@ -421,6 +421,7 @@ function StatusBadge({status}) {
 function Orders({ orders, setOrders, clients }) {
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCity, setFilterCity] = useState('');
@@ -444,22 +445,21 @@ function Orders({ orders, setOrders, clients }) {
     setForm({ clientId:o.clientId||'', clientName:o.clientName||'', city:o.city||'', item:o.item||'', supplier:o.supplier||'', sellPrice:o.sellPrice||'', buyPrice:o.buyPrice||'', deliveryCost:o.deliveryCost||'', currency:o.currency||'USD', status:o.status||'новый', manager:o.manager||'', date:o.date||today(), notes:o.notes||'' });
     setShowModal(true);
   };
+  const closeModal = () => { setShowModal(false); setEditId(null); setForm(emptyForm); setSaving(false); };
   const save = () => {
     if(!form.item || !form.sellPrice) return;
+    setSaving(true);
     const client = clients.find(c=>c.id===form.clientId);
     const base = { ...form, sellPrice: +form.sellPrice, buyPrice: +form.buyPrice, deliveryCost: +form.deliveryCost||0, clientName: client ? (client.name || client.phone) : form.clientName, city: client ? client.city : form.city };
     if (editId) {
       const updated = { ...base, id: editId };
       setOrders(prev => prev.map(o => o.id === editId ? updated : o));
-      apiUpdate('orders', editId, updated);
+      apiUpdate('orders', editId, updated).finally(closeModal);
     } else {
       const newItem = { ...base, id: uid() };
       setOrders(prev => [...prev, newItem]);
-      apiAdd('orders', newItem);
+      apiAdd('orders', newItem).finally(closeModal);
     }
-    setShowModal(false);
-    setEditId(null);
-    setForm(emptyForm);
   };
   const del = (id) => { setOrders(prev => prev.filter(o => o.id !== id)); apiDel('orders', id); };
   return (
@@ -477,7 +477,7 @@ function Orders({ orders, setOrders, clients }) {
         <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Клиент</th><th className="hide-mob">Товар</th><th className="hide-mob">Поставщик</th><th className="hide-mob">Город</th><th>Продажа</th><th className="hide-mob">Закупка</th><th className="hide-mob">Доставка</th><th className="hide-mob">Маржа</th><th className="hide-mob">Менеджер</th><th>Статус</th><th></th></tr></thead><tbody>{filtered.map(o=>(<tr key={o.id}><td>{fmtDate(o.date)}</td><td>{o.clientName}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.item}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.supplier}</td><td className="hide-mob">{o.city}</td><td className="amount-pos">{fmt(o.sellPrice)} $</td><td className="hide-mob amount-neg">{fmt(o.buyPrice)} $</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.deliveryCost>0?fmt(o.deliveryCost)+' $':'—'}</td><td className={`hide-mob ${o.sellPrice-o.buyPrice-(o.deliveryCost||0)>=0?'amount-pos':'amount-neg'}`}>{fmt(o.sellPrice-o.buyPrice-(o.deliveryCost||0))} $</td><td className="hide-mob">{o.manager}</td><td><StatusBadge status={o.status}/></td><td style={{display:'flex',gap:4}}><button className="btn btn-ghost btn-sm" onClick={()=>openEdit(o)}>✏️</button><button className="btn btn-ghost btn-sm" onClick={()=>del(o.id)}>✕</button></td></tr>))}</tbody></table></div>}
       </div>
       {showModal && (
-        <Modal title={editId ? 'Редактировать заказ' : 'Новый заказ'} onClose={()=>{ setShowModal(false); setEditId(null); setForm(emptyForm); }} footer={<><button className="btn btn-ghost" onClick={()=>{ setShowModal(false); setEditId(null); setForm(emptyForm); }}>Отмена</button><button className="btn btn-gold" onClick={save}>Сохранить</button></>}>
+        <Modal title={editId ? 'Редактировать заказ' : 'Новый заказ'} onClose={closeModal} footer={<><button className="btn btn-ghost" onClick={closeModal} disabled={saving}>Отмена</button><button className="btn btn-gold" onClick={save} disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить'}</button></>}>
           <div className="form-grid">
             <div className="form-group"><label>Клиент</label><ClientSearch clients={clients} value={form.clientId} onChange={c => setForm(f=>({...f, clientId:c.id, clientName:c.name||c.phone, city:c.city||f.city}))}/></div>
             <div className="form-group"><label>Дата</label><input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/></div>
@@ -506,6 +506,7 @@ function Clients({ clients, setClients, orders }) {
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
 
   const filtered = clients.filter(c => !search || (c.name||'').toLowerCase().includes(search.toLowerCase()) || (c.phone||'').includes(search));
 
@@ -516,20 +517,20 @@ function Clients({ clients, setClients, orders }) {
     setForm({ name:c.name||'', phone:c.phone||'', lang:c.lang||'RU', source:c.source||'Instagram', vip:c.vip===true||c.vip==='true', birthday:c.birthday||'', tags:c.tags||'', notes:c.notes||'', city:c.city||'' });
     setShowModal(true);
   };
-  const closeModal = () => { setShowModal(false); setEditId(null); setForm(emptyForm); };
+  const closeModal = () => { setShowModal(false); setEditId(null); setForm(emptyForm); setSaving(false); };
 
   const save = () => {
     if(!form.phone && !form.name) return;
+    setSaving(true);
     if (editId) {
       const updated = { ...clients.find(c=>c.id===editId), ...form };
       setClients(prev => prev.map(c => c.id===editId ? updated : c));
-      apiUpdate('clients', editId, updated);
+      apiUpdate('clients', editId, updated).finally(closeModal);
     } else {
       const newClient = { ...form, id: uid(), created: today() };
       setClients(prev => [...prev, newClient]);
-      apiAdd('clients', newClient);
+      apiAdd('clients', newClient).finally(closeModal);
     }
-    closeModal();
   };
 
   const clientOrders = selected ? orders.filter(o=>o.clientId===selected.id) : [];
@@ -595,7 +596,7 @@ function Clients({ clients, setClients, orders }) {
       )}
 
       {showModal && (
-        <Modal title={editId ? 'Редактировать клиента' : 'Новый клиент'} onClose={closeModal} footer={<><button className="btn btn-ghost" onClick={closeModal}>Отмена</button><button className="btn btn-gold" onClick={save}>Сохранить</button></>}>
+        <Modal title={editId ? 'Редактировать клиента' : 'Новый клиент'} onClose={closeModal} footer={<><button className="btn btn-ghost" onClick={closeModal} disabled={saving}>Отмена</button><button className="btn btn-gold" onClick={save} disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить'}</button></>}>
           <ClientForm/>
         </Modal>
       )}
