@@ -230,20 +230,20 @@ const apiLoad = (sheet) =>
 
 const apiAdd = (sheet, data) => {
   if (!API_READY) return Promise.resolve({ ok: false });
-  const url = `${API_URL}?action=add&sheet=${encodeURIComponent(sheet)}&data=${encodeURIComponent(JSON.stringify(data))}&t=${Date.now()}`;
-  return fetch(url).then(r => r.json()).catch(() => ({ ok: false }));
+  return fetch(API_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'add', sheet, data }) })
+    .then(() => ({ ok: true })).catch(() => ({ ok: false }));
 };
 
 const apiDel = (sheet, id) => {
   if (!API_READY) return Promise.resolve({ ok: false });
-  const url = `${API_URL}?action=delete&sheet=${encodeURIComponent(sheet)}&id=${encodeURIComponent(id)}&t=${Date.now()}`;
-  return fetch(url).then(r => r.json()).catch(() => ({ ok: false }));
+  return fetch(API_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'delete', sheet, id }) })
+    .then(() => ({ ok: true })).catch(() => ({ ok: false }));
 };
 
 const apiUpdate = (sheet, id, data) => {
   if (!API_READY) return Promise.resolve({ ok: false });
-  const url = `${API_URL}?action=update&sheet=${encodeURIComponent(sheet)}&id=${encodeURIComponent(id)}&data=${encodeURIComponent(JSON.stringify(data))}&t=${Date.now()}`;
-  return fetch(url).then(r => r.json()).catch(() => ({ ok: false }));
+  return fetch(API_URL, { method:'POST', mode:'no-cors', body: JSON.stringify({ action:'update', sheet, id, data }) })
+    .then(() => ({ ok: true })).catch(() => ({ ok: false }));
 };
 
 const EXPENSE_CATS = ['Реклама', 'Закупка букетов', 'Зарплата', 'Прочее', 'Инструменты', 'Транспорт'];
