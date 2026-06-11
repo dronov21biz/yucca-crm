@@ -224,23 +224,26 @@ const fmtDate = (d) => d ? String(d).split('T')[0] : '—';
 
 // ─── API ─────────────────────────────────────────────────────────────────
 const apiLoad = (sheet) =>
-  fetch(`${API_URL}?sheet=${sheet}&t=${Date.now()}`)
+  fetch(`${API_URL}?action=get&sheet=${sheet}&t=${Date.now()}`)
     .then(r => r.json())
     .catch(() => []);
 
 const apiAdd = (sheet, data) => {
   if (!API_READY) return;
-  fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'add', sheet, data }) }).catch(() => {});
+  const url = `${API_URL}?action=add&sheet=${encodeURIComponent(sheet)}&data=${encodeURIComponent(JSON.stringify(data))}&t=${Date.now()}`;
+  fetch(url).catch(() => {});
 };
 
 const apiDel = (sheet, id) => {
   if (!API_READY) return;
-  fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'delete', sheet, id }) }).catch(() => {});
+  const url = `${API_URL}?action=delete&sheet=${encodeURIComponent(sheet)}&id=${encodeURIComponent(id)}&t=${Date.now()}`;
+  fetch(url).catch(() => {});
 };
 
 const apiUpdate = (sheet, id, data) => {
   if (!API_READY) return;
-  fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'update', sheet, id, data }) }).catch(() => {});
+  const url = `${API_URL}?action=update&sheet=${encodeURIComponent(sheet)}&id=${encodeURIComponent(id)}&data=${encodeURIComponent(JSON.stringify(data))}&t=${Date.now()}`;
+  fetch(url).catch(() => {});
 };
 
 const EXPENSE_CATS = ['Реклама', 'Закупка букетов', 'Зарплата', 'Прочее', 'Инструменты', 'Транспорт'];
@@ -444,7 +447,7 @@ function Orders({ orders, setOrders, clients }) {
   const save = () => {
     if(!form.item || !form.sellPrice) return;
     const client = clients.find(c=>c.id===form.clientId);
-    const base = { ...form, sellPrice: +form.sellPrice, buyPrice: +form.buyPrice, deliveryCost: +form.deliveryCost||0, clientName: client ? client.name : form.clientName, city: client ? client.city : form.city };
+    const base = { ...form, sellPrice: +form.sellPrice, buyPrice: +form.buyPrice, deliveryCost: +form.deliveryCost||0, clientName: client ? (client.name || client.phone) : form.clientName, city: client ? client.city : form.city };
     if (editId) {
       const updated = { ...base, id: editId };
       setOrders(prev => prev.map(o => o.id === editId ? updated : o));
