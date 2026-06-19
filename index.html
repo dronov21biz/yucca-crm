@@ -286,8 +286,8 @@ function Reminders({ orders, clients }) {
   const reminders = [];
   Object.values(lastOrder).forEach(o => {
     // Парсим дату локально чтобы избежать UTC-сдвига на 1 день
-    const parts = (o.date || '').split('-').map(Number);
-    if (parts.length < 3) return;
+    const parts = (o.date || '').slice(0, 10).split('-').map(Number);
+    if (parts.length < 3 || parts.some(isNaN)) return;
     const d = new Date(parts[0], parts[1]-1, parts[2]);
     // Пропускаем заказы из текущего года — они не могут быть годовщиной
     if (d.getFullYear() >= today.getFullYear()) return;
