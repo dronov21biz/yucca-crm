@@ -282,7 +282,7 @@ function Reminders({ orders, clients }) {
     if (!lastOrder[key] || o.date > lastOrder[key].date) lastOrder[key] = o;
   });
 
-  // Ищем тех, у кого годовщина заказа в ближайшие 30 дней (или уже прошла до 1 дня назад)
+  // Показываем клиентов чьи заказы были давно — ближайшие по годовщине
   const reminders = [];
   Object.values(lastOrder).forEach(o => {
     // Парсим дату локально чтобы избежать UTC-сдвига на 1 день
@@ -291,28 +291,26 @@ function Reminders({ orders, clients }) {
     const d = new Date(parts[0], parts[1]-1, parts[2]);
     // Пропускаем заказы из текущего года — они не могут быть годовщиной
     if (d.getFullYear() >= today.getFullYear()) return;
-    // Годовщина в этом году
-    const ann = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+    // Ближайшая годовщина (этот или следующий год)
+    let ann = new Date(today.getFullYear(), d.getMonth(), d.getDate());
     let diff = Math.round((ann - today) / 86400000);
-    // Если годовщина уже была в этом году, берём следующий год
-    if (diff < -1) {
-      const ann2 = new Date(today.getFullYear() + 1, d.getMonth(), d.getDate());
-      diff = Math.round((ann2 - today) / 86400000);
+    if (diff < -30) {
+      ann = new Date(today.getFullYear() + 1, d.getMonth(), d.getDate());
+      diff = Math.round((ann - today) / 86400000);
     }
-    if (diff >= -1 && diff <= 30) {
-      const client = clients.find(c => c.id === o.clientId);
-      reminders.push({ ...o, daysUntil: diff, clientLabel: client?.name || o.clientName });
-    }
+    const client = clients.find(c => c.id === o.clientId);
+    reminders.push({ ...o, daysUntil: diff, clientLabel: client?.name || o.clientName });
   });
 
+  // Сортируем по ближайшей годовщине, показываем 20
   reminders.sort((a, b) => a.daysUntil - b.daysUntil);
   const shown = reminders.slice(0, 20);
 
   if (shown.length === 0) return null;
 
   const dayLabel = (d) => {
+    if (d < 0) return { text: `${Math.abs(d)} дн. назад`, color: 'var(--text-dim)' };
     if (d === 0) return { text: 'Сегодня', color: 'var(--red)' };
-    if (d === -1) return { text: 'Вчера', color: 'var(--text-dim)' };
     if (d === 1) return { text: 'Завтра', color: 'var(--gold)' };
     if (d <= 7) return { text: `Через ${d} дня`, color: 'var(--blue)' };
     return { text: `Через ${d} дней`, color: 'var(--text-dim)' };
