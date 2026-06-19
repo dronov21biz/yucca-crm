@@ -289,9 +289,8 @@ function Reminders({ orders, clients }) {
     const parts = (o.date || '').split('-').map(Number);
     if (parts.length < 3) return;
     const d = new Date(parts[0], parts[1]-1, parts[2]);
-    // Заказ должен быть минимум 11 месяцев назад — иначе это не годовщина
-    const daysSince = (today - d) / 86400000;
-    if (daysSince < 330) return;
+    // Пропускаем заказы из текущего года — они не могут быть годовщиной
+    if (d.getFullYear() >= today.getFullYear()) return;
     // Годовщина в этом году
     const ann = new Date(today.getFullYear(), d.getMonth(), d.getDate());
     let diff = Math.round((ann - today) / 86400000);
