@@ -358,6 +358,11 @@ function Dashboard({ orders, expenses, clients }) {
   const expTotal = filtExp.reduce((s,e)=>s+e.amount,0);
   const profit  = revenue - cogs - expTotal;
   const margin  = revenue ? ((profit/revenue)*100).toFixed(1) : 0;
+  const activeClientIds = new Set(filtOrders.map(o => o.clientId || o.clientName).filter(Boolean));
+  const activeClientsCount = filterMonth ? activeClientIds.size : clients.length;
+  const vipCount = filterMonth
+    ? clients.filter(c => activeClientIds.has(c.id) && (c.vip===true||c.vip==='true')).length
+    : clients.filter(c=>c.vip===true||c.vip==='true').length;
 
   const months = {};
   filtOrders.filter(o=>(o.status==='выполнен'||o.status==='Доставлен')).forEach(o => {
@@ -401,7 +406,7 @@ function Dashboard({ orders, expenses, clients }) {
         <div className="stat-card"><div className="stat-label">Выручка</div><div className="stat-value gold">{fmt(revenue)} $</div><div className="stat-sub">{filtOrders.filter(o=>(o.status==='выполнен'||o.status==='Доставлен')).length} выполненных заказов</div></div>
         <div className="stat-card"><div className="stat-label">Расходы</div><div className="stat-value red">{fmt(cogs+expTotal)} $</div><div className="stat-sub">Закупки + операционные</div></div>
         <div className="stat-card"><div className="stat-label">Прибыль</div><div className={`stat-value ${profit>=0?'green':'red'}`}>{fmt(profit)} $</div><div className="profit-bar"><div className="profit-fill" style={{width:Math.max(0,Math.min(100,margin))+'%'}}></div></div><div className="stat-sub">Маржа {margin}%</div></div>
-        <div className="stat-card"><div className="stat-label">Клиентов</div><div className="stat-value gold">{clients.length}</div><div className="stat-sub">{clients.filter(c=>c.vip===true||c.vip==='true').length} VIP</div></div>
+        <div className="stat-card"><div className="stat-label">Клиентов</div><div className="stat-value gold">{activeClientsCount}</div><div className="stat-sub">{vipCount} VIP{filterMonth ? ' · в этом месяце' : ''}</div></div>
       </div>
       <div className="resp-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16}}>
         <div className="card">
@@ -522,7 +527,9 @@ function Clients({ clients, setClients, orders }) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  const filtered = clients.filter(c => !search || (c.name||'').toLowerCase().includes(search.toLowerCase()) || (c.phone||'').includes(search));
+  const filtered = clients
+    .filter(c => !search || (c.name||'').toLowerCase().includes(search.toLowerCase()) || (c.phone||'').includes(search))
+    .sort((a, b) => (b.created || b.id || '').localeCompare(a.created || a.id || ''));
 
   const openNew = () => { setEditId(null); setForm(emptyForm); setShowModal(true); };
   const openEdit = (c, e) => {
