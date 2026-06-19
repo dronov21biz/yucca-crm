@@ -282,10 +282,16 @@ function Reminders({ orders, clients }) {
     if (!lastOrder[key] || o.date > lastOrder[key].date) lastOrder[key] = o;
   });
 
-  // Ищем тех, у кого годовщина заказа в ближайшие 3 дня (или уже прошла до 1 дня назад)
+  // Ищем тех, у кого годовщина заказа в ближайшие 30 дней (или уже прошла до 1 дня назад)
   const reminders = [];
   Object.values(lastOrder).forEach(o => {
-    const d = new Date(o.date);
+    // Парсим дату локально чтобы избежать UTC-сдвига на 1 день
+    const parts = (o.date || '').split('-').map(Number);
+    if (parts.length < 3) return;
+    const d = new Date(parts[0], parts[1]-1, parts[2]);
+    // Заказ должен быть минимум 11 месяцев назад — иначе это не годовщина
+    const daysSince = (today - d) / 86400000;
+    if (daysSince < 330) return;
     // Годовщина в этом году
     const ann = new Date(today.getFullYear(), d.getMonth(), d.getDate());
     let diff = Math.round((ann - today) / 86400000);
@@ -294,27 +300,29 @@ function Reminders({ orders, clients }) {
       const ann2 = new Date(today.getFullYear() + 1, d.getMonth(), d.getDate());
       diff = Math.round((ann2 - today) / 86400000);
     }
-    if (diff >= -1 && diff <= 3) {
+    if (diff >= -1 && diff <= 30) {
       const client = clients.find(c => c.id === o.clientId);
       reminders.push({ ...o, daysUntil: diff, clientLabel: client?.name || o.clientName });
     }
   });
 
   reminders.sort((a, b) => a.daysUntil - b.daysUntil);
+  const shown = reminders.slice(0, 20);
 
-  if (reminders.length === 0) return null;
+  if (shown.length === 0) return null;
 
   const dayLabel = (d) => {
     if (d === 0) return { text: 'Сегодня', color: 'var(--red)' };
-    if (d === 1) return { text: 'Завтра', color: 'var(--gold)' };
     if (d === -1) return { text: 'Вчера', color: 'var(--text-dim)' };
-    return { text: `Через ${d} дня`, color: 'var(--blue)' };
+    if (d === 1) return { text: 'Завтра', color: 'var(--gold)' };
+    if (d <= 7) return { text: `Через ${d} дня`, color: 'var(--blue)' };
+    return { text: `Через ${d} дней`, color: 'var(--text-dim)' };
   };
 
   return (
     <div className="card" style={{marginBottom:24,border:'1px solid var(--gold-light)'}}>
       <div className="card-title">🔔 Напоминания — пора написать клиенту</div>
-      {reminders.map(r => {
+      {shown.map(r => {
         const { text, color } = dayLabel(r.daysUntil);
         return (
           <div key={r.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid var(--border)',flexWrap:'wrap',gap:8}}>
