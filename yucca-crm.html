@@ -118,11 +118,11 @@
 
   /* MODAL */
   .modal-overlay { position: fixed; inset: 0; background: #00000060; z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
-  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
-  .modal-header { padding: 18px 20px 0; display: flex; justify-content: space-between; align-items: center; }
+  .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; width: 100%; max-width: 560px; max-height: 90vh; display: flex; flex-direction: column; }
+  .modal-header { padding: 18px 20px 0; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
   .modal-title { font-size: 15px; font-weight: 600; color: var(--text); }
-  .modal-body { padding: 16px 20px 20px; }
-  .modal-footer { padding: 0 20px 20px; display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-body { padding: 16px 20px 20px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+  .modal-footer { padding: 0 20px 20px; display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0; border-top: 1px solid var(--border); padding-top: 14px; }
   .close-btn { background: none; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; padding: 2px 6px; line-height: 1; border-radius: 4px; }
   .close-btn:hover { background: var(--bg3); color: var(--text); }
 
@@ -190,13 +190,19 @@
     .detail-grid { grid-template-columns: 1fr; }
     .search-bar input { min-width: 0; width: 100%; }
     .section-header { flex-wrap: wrap; gap: 8px; }
-    .modal { max-width: 100%; margin: 0; border-radius: 10px 10px 0 0; }
+    .modal { max-width: 100%; margin: 0; border-radius: 14px 14px 0 0; height: 88vh; }
     .modal-overlay { align-items: flex-end; padding: 0; }
+    .modal-body { padding: 12px 16px 16px; }
+    .modal-header { padding: 14px 16px 0; }
+    .modal-footer { padding: 10px 16px 24px; }
     table { font-size: 12px; }
     th, td { padding: 7px 9px; }
     html, body, #root, #app { overflow-x: hidden; max-width: 100vw; }
     .resp-grid { grid-template-columns: 1fr !important; }
     .hide-mob { display: none !important; }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { font-size: 11px; margin-bottom: 3px; }
+    .form-group input, .form-group select, .form-group textarea { font-size: 14px; padding: 9px 10px; }
   }
   @media (max-width: 480px) {
     .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -271,7 +277,7 @@ function Reminders({ orders, clients }) {
 
   // Последний заказ на каждого клиента
   const lastOrder = {};
-  orders.filter(o => o.status === 'выполнен' && o.date).forEach(o => {
+  orders.filter(o => (o.status === 'выполнен' || o.status === 'Доставлен') && o.date).forEach(o => {
     const key = o.clientId || o.clientName;
     if (!lastOrder[key] || o.date > lastOrder[key].date) lastOrder[key] = o;
   });
@@ -339,14 +345,14 @@ function Dashboard({ orders, expenses, clients }) {
   const filtOrders = filterMonth ? orders.filter(o => fmtDate(o.date).startsWith(filterMonth)) : orders;
   const filtExp    = filterMonth ? expenses.filter(e => fmtDate(e.date).startsWith(filterMonth)) : expenses;
 
-  const revenue = filtOrders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+o.sellPrice,0);
-  const cogs    = filtOrders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+o.buyPrice,0);
+  const revenue = filtOrders.filter(o=>(o.status==='выполнен'||o.status==='Доставлен')).reduce((s,o)=>s+o.sellPrice,0);
+  const cogs    = filtOrders.filter(o=>(o.status==='выполнен'||o.status==='Доставлен')).reduce((s,o)=>s+o.buyPrice,0);
   const expTotal = filtExp.reduce((s,e)=>s+e.amount,0);
   const profit  = revenue - cogs - expTotal;
   const margin  = revenue ? ((profit/revenue)*100).toFixed(1) : 0;
 
   const months = {};
-  filtOrders.filter(o=>o.status==='выполнен').forEach(o => {
+  filtOrders.filter(o=>(o.status==='выполнен'||o.status==='Доставлен')).forEach(o => {
     const m = monthKey(o.date);
     if(!months[m]) months[m] = { rev: 0, cost: 0 };
     months[m].rev += o.sellPrice; months[m].cost += o.buyPrice;
@@ -384,7 +390,7 @@ function Dashboard({ orders, expenses, clients }) {
         </div>
       </div>
       <div className="stats-grid">
-        <div className="stat-card"><div className="stat-label">Выручка</div><div className="stat-value gold">{fmt(revenue)} $</div><div className="stat-sub">{filtOrders.filter(o=>o.status==='выполнен').length} выполненных заказов</div></div>
+        <div className="stat-card"><div className="stat-label">Выручка</div><div className="stat-value gold">{fmt(revenue)} $</div><div className="stat-sub">{filtOrders.filter(o=>(o.status==='выполнен'||o.status==='Доставлен')).length} выполненных заказов</div></div>
         <div className="stat-card"><div className="stat-label">Расходы</div><div className="stat-value red">{fmt(cogs+expTotal)} $</div><div className="stat-sub">Закупки + операционные</div></div>
         <div className="stat-card"><div className="stat-label">Прибыль</div><div className={`stat-value ${profit>=0?'green':'red'}`}>{fmt(profit)} $</div><div className="profit-bar"><div className="profit-fill" style={{width:Math.max(0,Math.min(100,margin))+'%'}}></div></div><div className="stat-sub">Маржа {margin}%</div></div>
         <div className="stat-card"><div className="stat-label">Клиентов</div><div className="stat-value gold">{clients.length}</div><div className="stat-sub">{clients.filter(c=>c.vip===true||c.vip==='true').length} VIP</div></div>
@@ -412,7 +418,8 @@ function Dashboard({ orders, expenses, clients }) {
 }
 
 function StatusBadge({status}) {
-  const map = { 'выполнен':'badge-green','в процессе':'badge-blue','отменён':'badge-red','новый':'badge-gold' };
+  const map = { 'Доставлен':'badge-green','Собран':'badge-blue','Отменен':'badge-red','Принят':'badge-gold','Оплачен':'badge-blue',
+    'выполнен':'badge-green','в процессе':'badge-blue','отменён':'badge-red','новый':'badge-gold' };
   return <span className={`badge ${map[status]||'badge-gray'}`}>{status}</span>;
 }
 
@@ -425,7 +432,7 @@ function Orders({ orders, setOrders, clients }) {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterMonth, setFilterMonth] = useState('');
-  const emptyForm = { clientId:'', clientName:'', city:'', item:'', supplier:'', sellPrice:'', buyPrice:'', deliveryCost:'', currency:'USD', status:'новый', manager:'', date:today(), notes:'' };
+  const emptyForm = { clientId:'', clientName:'', city:'', item:'', supplier:'', sellPrice:'', buyPrice:'', deliveryCost:'', currency:'USD', status:'Принят', manager:'', date:today(), notes:'' };
   const [form, setForm] = useState(emptyForm);
   const cities = [...new Set(orders.map(o=>o.city).filter(Boolean))];
   const allMonths = useMemo(() => {
@@ -466,7 +473,7 @@ function Orders({ orders, setOrders, clients }) {
       <div className="section-header"><h2>Заказы</h2><button className="btn btn-gold" onClick={()=>setShowModal(true)}>+ Новый заказ</button></div>
       <div className="filter-row" style={{marginBottom:16}}>
         <div className="search-bar"><span className="search-icon">🔍</span><input placeholder="Поиск..." value={search} onChange={e=>setSearch(e.target.value)}/></div>
-        <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{width:'auto'}}><option value="">Все статусы</option>{['новый','в процессе','выполнен','отменён'].map(s=><option key={s}>{s}</option>)}</select>
+        <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} style={{width:'auto'}}><option value="">Все статусы</option>{['Принят','Оплачен','Собран','Доставлен','Отменен'].map(s=><option key={s}>{s}</option>)}</select>
         <select value={filterCity} onChange={e=>setFilterCity(e.target.value)} style={{width:'auto'}}><option value="">Все города</option>{cities.map(c=><option key={c}>{c}</option>)}</select>
         <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} style={{width:'auto'}}><option value="">Все месяцы</option>{allMonths.map(m=><option key={m} value={m}>{monthLabel(m)}</option>)}</select>
         {filterMonth && <button className="btn btn-ghost btn-sm" onClick={()=>setFilterMonth('')}>✕</button>}
@@ -487,7 +494,7 @@ function Orders({ orders, setOrders, clients }) {
             <div className="form-group"><label>Цена закупки</label><input type="number" placeholder="2500" value={form.buyPrice} onChange={e=>setForm(f=>({...f,buyPrice:e.target.value}))}/></div>
             <div className="form-group"><label>Стоимость доставки</label><input type="number" placeholder="0" value={form.deliveryCost} onChange={e=>setForm(f=>({...f,deliveryCost:e.target.value}))}/></div>
             <div className="form-group"><label>Валюта</label><select value={form.currency} onChange={e=>setForm(f=>({...f,currency:e.target.value}))}>{['USD','EUR','TRY','AED','THB'].map(c=><option key={c}>{c}</option>)}</select></div>
-            <div className="form-group"><label>Статус</label><select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>{['новый','в процессе','выполнен','отменён'].map(s=><option key={s}>{s}</option>)}</select></div>
+            <div className="form-group"><label>Статус</label><select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>{['Принят','Оплачен','Собран','Доставлен','Отменен'].map(s=><option key={s}>{s}</option>)}</select></div>
             <div className="form-group"><label>Менеджер</label><input placeholder="Юсуф" value={form.manager} onChange={e=>setForm(f=>({...f,manager:e.target.value}))}/></div>
             <div className="form-group full"><label>Заметка</label><textarea placeholder="Особые пожелания клиента..." value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))}/></div>
           </div>
@@ -533,8 +540,8 @@ function Clients({ clients, setClients, orders }) {
   };
 
   const clientOrders = selected ? orders.filter(o=>o.clientId===selected.id) : [];
-  const totalSpent = clientOrders.filter(o=>o.status==='выполнен').reduce((s,o)=>s+o.sellPrice,0);
-  const SOURCES = ['Instagram','WhatsApp','Сайт','Рекомендация','TikTok','Google','Прочее'];
+  const totalSpent = clientOrders.filter(o=>(o.status==='выполнен'||o.status==='Доставлен')).reduce((s,o)=>s+o.sellPrice,0);
+  const SOURCES = ['Instagram','WhatsApp','Telegram','Сайт','Рекомендация','TikTok','Google','Прочее'];
   const LANGS = ['RU','EN','TR','AR','TH'];
 
 
@@ -660,7 +667,7 @@ function PnL({ orders, expenses }) {
       return d.getFullYear()===now.getFullYear();
     });
   };
-  const filtOrders = filterByPeriod(orders.filter(o=>o.status==='выполнен'),'date');
+  const filtOrders = filterByPeriod(orders.filter(o=>(o.status==='выполнен'||o.status==='Доставлен')),'date');
   const filtExp = filterByPeriod(expenses,'date');
   const revenue = filtOrders.reduce((s,o)=>s+o.sellPrice,0);
   const cogs = filtOrders.reduce((s,o)=>s+o.buyPrice,0);
@@ -768,7 +775,7 @@ function ClientSearch({ clients, value, onChange }) {
 // ─── SALARY CALC ─────────────────────────────────────────────────────────
 // Правила: 5% стандарт; 7% если в день 3+ заказов И сумма дня >= 1000$
 const calcSalary = (orders) => {
-  const done = orders.filter(o => o.status === 'выполнен');
+  const done = orders.filter(o => o.status === 'выполнен' || o.status === 'Доставлен');
   // группируем выполненные заказы по дате
   const byDay = {};
   done.forEach(o => {
@@ -797,7 +804,7 @@ function Managers({ orders }) {
   }, [orders]);
 
   const filtered = orders.filter(o => {
-    if (o.status !== 'выполнен') return false;
+    if (o.status !== 'выполнен' && o.status !== 'Доставлен') return false;
     const d = fmtDate(o.date);
     if (period === 'specific') return d.startsWith(specificMonth);
     if (period === 'all') return true;
