@@ -339,6 +339,13 @@ function Reminders({ orders, clients }) {
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────
 function Dashboard({ orders, expenses, clients }) {
+  const [apiDebug, setApiDebug] = React.useState('проверяю...');
+  React.useEffect(() => {
+    fetch(API_URL + '?sheet=orders&t=' + Date.now())
+      .then(function(r) { return r.text(); })
+      .then(function(t) { setApiDebug('OK: ' + t.slice(0,80)); })
+      .catch(function(e) { setApiDebug('ОШИБКА: ' + e.message); });
+  }, []);
   const allMonths = useMemo(() => {
     const keys = new Set();
     [...orders, ...expenses].forEach(x => { if(x.date) keys.add(fmtDate(x.date).slice(0,7)); });
@@ -399,6 +406,7 @@ function Dashboard({ orders, expenses, clients }) {
           {filterMonth && <button className="btn btn-ghost btn-sm" onClick={()=>setFilterMonth('')}>✕</button>}
         </div>
       </div>
+      <div style={{background:'#ff000022',border:'1px solid red',borderRadius:8,padding:'8px 12px',marginBottom:12,fontSize:11,wordBreak:'break-all',color:'var(--text)'}}>🔧 API debug: {apiDebug}</div>
       <div className="stats-grid">
         <div className="stat-card"><div className="stat-label">Выручка</div><div className="stat-value gold">{fmt(revenue)} $</div><div className="stat-sub">{filtOrders.filter(o=>(o.status==='выполнен'||o.status==='Доставлен')).length} выполненных заказов</div></div>
         <div className="stat-card"><div className="stat-label">Расходы</div><div className="stat-value red">{fmt(cogs+expTotal)} $</div><div className="stat-sub">Закупки + операционные</div></div>
