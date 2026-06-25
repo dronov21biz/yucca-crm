@@ -929,10 +929,13 @@ function Managers({ orders }) {
 }
 
 // ─── APP ──────────────────────────────────────────────────────────────────
+const loadCache = (key) => { try { return JSON.parse(sessionStorage.getItem(key) || '[]'); } catch { return []; } };
+const saveCache = (key, data) => { try { sessionStorage.setItem(key, JSON.stringify(data)); } catch {} };
+
 function App() {
-  const [clients, setClients] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [expenses, setExpenses] = useState([]);
+  const [clients, setClients] = useState(() => loadCache('yucca_clients'));
+  const [orders, setOrders] = useState(() => loadCache('yucca_orders'));
+  const [expenses, setExpenses] = useState(() => loadCache('yucca_expenses'));
   const [page, setPage] = useState('dashboard');
   const [loading, setLoading] = useState(API_READY);
   const [synced, setSynced] = useState(false);
@@ -947,9 +950,12 @@ function App() {
     if (!API_READY) return;
     Promise.all([apiLoad('clients'), apiLoad('orders'), apiLoad('expenses')])
       .then(([c, o, e]) => {
-        setClients((Array.isArray(c)?c:[]).map(x=>({...x, vip: x.vip==='true'||x.vip===true, phone: (x.phone||'').replace(/^'+/, '')})));
-        setOrders((Array.isArray(o)?o:[]).map(x=>({...x, sellPrice:+x.sellPrice||0, buyPrice:+x.buyPrice||0, deliveryCost:+x.deliveryCost||0})));
-        setExpenses((Array.isArray(e)?e:[]).map(x=>({...x, amount:+x.amount||0})));
+        const cl = (Array.isArray(c)?c:[]).map(x=>({...x, vip: x.vip==='true'||x.vip===true, phone: (x.phone||'').replace(/^'+/, '')}));
+        const or = (Array.isArray(o)?o:[]).map(x=>({...x, sellPrice:+x.sellPrice||0, buyPrice:+x.buyPrice||0, deliveryCost:+x.deliveryCost||0}));
+        const ex = (Array.isArray(e)?e:[]).map(x=>({...x, amount:+x.amount||0}));
+        setClients(cl); saveCache('yucca_clients', cl);
+        setOrders(or);   saveCache('yucca_orders', or);
+        setExpenses(ex); saveCache('yucca_expenses', ex);
         setSynced(true);
       })
       .catch(()=>setSynced(false))
