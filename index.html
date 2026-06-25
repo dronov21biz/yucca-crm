@@ -339,12 +339,12 @@ function Reminders({ orders, clients }) {
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────
 function Dashboard({ orders, expenses, clients }) {
-  const [apiDebug, setApiDebug] = React.useState('проверяю...');
+  const [apiDebug, setApiDebug] = React.useState('...');
   React.useEffect(() => {
-    fetch(API_URL + '?sheet=orders&t=' + Date.now())
-      .then(function(r) { return r.text(); })
-      .then(function(t) { setApiDebug('OK: ' + t.slice(0,80)); })
-      .catch(function(e) { setApiDebug('ОШИБКА: ' + e.message); });
+    var t = setInterval(function(){
+      setApiDebug('C:'+(window._dbgC||'?')+' O:'+(window._dbgO||'?')+' E:'+(window._dbgE||'?')+' MAP:'+(window._dbgMap||'?')+' ALL:'+(window._dbgAll||'ok'));
+    }, 500);
+    return function(){ clearInterval(t); };
   }, []);
   const allMonths = useMemo(() => {
     const keys = new Set();
@@ -956,18 +956,29 @@ function App() {
 
   useEffect(() => {
     if (!API_READY) return;
-    Promise.all([apiLoad('clients'), apiLoad('orders'), apiLoad('expenses')])
-      .then(([c, o, e]) => {
-        const cl = (Array.isArray(c)?c:[]).map(x=>({...x, vip: x.vip==='true'||x.vip===true, phone: (x.phone||'').replace(/^'+/, '')}));
-        const or = (Array.isArray(o)?o:[]).map(x=>({...x, sellPrice:+x.sellPrice||0, buyPrice:+x.buyPrice||0, deliveryCost:+x.deliveryCost||0}));
-        const ex = (Array.isArray(e)?e:[]).map(x=>({...x, amount:+x.amount||0}));
-        setClients(cl); saveCache('yucca_clients', cl);
-        setOrders(or);   saveCache('yucca_orders', or);
-        setExpenses(ex); saveCache('yucca_expenses', ex);
-        setSynced(true);
+    Promise.all([
+      apiLoad('clients').then(function(d){ window._dbgC = Array.isArray(d)?d.length:'not array'; return d; }).catch(function(e){ window._dbgC = 'ERR:'+e; return []; }),
+      apiLoad('orders').then(function(d){ window._dbgO = Array.isArray(d)?d.length:'not array'; return d; }).catch(function(e){ window._dbgO = 'ERR:'+e; return []; }),
+      apiLoad('expenses').then(function(d){ window._dbgE = Array.isArray(d)?d.length:'not array'; return d; }).catch(function(e){ window._dbgE = 'ERR:'+e; return []; })
+    ])
+      .then(function(results) {
+        var c = results[0]; var o = results[1]; var e = results[2];
+        try {
+          var cl = (Array.isArray(c)?c:[]).map(function(x){ return Object.assign({},x,{vip:x.vip==='true'||x.vip===true, phone:(String(x.phone||'')).replace(/^'+/,'')}); });
+          var or2 = (Array.isArray(o)?o:[]).map(function(x){ return Object.assign({},x,{sellPrice:+x.sellPrice||0, buyPrice:+x.buyPrice||0, deliveryCost:+x.deliveryCost||0}); });
+          var ex2 = (Array.isArray(e)?e:[]).map(function(x){ return Object.assign({},x,{amount:+x.amount||0}); });
+          window._dbgMap = 'C:'+cl.length+' O:'+or2.length+' E:'+ex2.length;
+          setClients(cl); saveCache('yucca_clients', cl);
+          setOrders(or2); saveCache('yucca_orders', or2);
+          setExpenses(ex2); saveCache('yucca_expenses', ex2);
+          setSynced(true);
+        } catch(err) {
+          window._dbgMap = 'MAP_ERR:'+err;
+          setSynced(false);
+        }
       })
-      .catch(()=>setSynced(false))
-      .finally(()=>setLoading(false));
+      .catch(function(err){ window._dbgAll = 'ALL_ERR:'+err; setSynced(false); })
+      .finally(function(){ setLoading(false); });
   }, []);
 
   const nav = [
