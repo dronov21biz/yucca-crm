@@ -339,13 +339,6 @@ function Reminders({ orders, clients }) {
 
 // ─── DASHBOARD ───────────────────────────────────────────────────────────
 function Dashboard({ orders, expenses, clients }) {
-  const [apiDebug, setApiDebug] = React.useState('...');
-  React.useEffect(() => {
-    var t = setInterval(function(){
-      setApiDebug('C:'+(window._dbgC||'?')+' O:'+(window._dbgO||'?')+' E:'+(window._dbgE||'?')+' MAP:'+(window._dbgMap||'?')+' ALL:'+(window._dbgAll||'ok'));
-    }, 500);
-    return function(){ clearInterval(t); };
-  }, []);
   const allMonths = useMemo(() => {
     const keys = new Set();
     [...orders, ...expenses].forEach(x => { if(x.date) keys.add(fmtDate(x.date).slice(0,7)); });
@@ -406,8 +399,7 @@ function Dashboard({ orders, expenses, clients }) {
           {filterMonth && <button className="btn btn-ghost btn-sm" onClick={()=>setFilterMonth('')}>✕</button>}
         </div>
       </div>
-      <div style={{background:'#ff000022',border:'1px solid red',borderRadius:8,padding:'8px 12px',marginBottom:12,fontSize:11,wordBreak:'break-all',color:'var(--text)'}}>🔧 API debug: {apiDebug}</div>
-      <div className="stats-grid">
+<div className="stats-grid">
         <div className="stat-card"><div className="stat-label">Выручка</div><div className="stat-value gold">{fmt(revenue)} $</div><div className="stat-sub">{filtOrders.filter(o=>(o.status==='выполнен'||o.status==='Доставлен')).length} выполненных заказов</div></div>
         <div className="stat-card"><div className="stat-label">Расходы</div><div className="stat-value red">{fmt(cogs+expTotal)} $</div><div className="stat-sub">Закупки + операционные</div></div>
         <div className="stat-card"><div className="stat-label">Прибыль</div><div className={`stat-value ${profit>=0?'green':'red'}`}>{fmt(profit)} $</div><div className="profit-bar"><div className="profit-fill" style={{width:Math.max(0,Math.min(100,margin))+'%'}}></div></div><div className="stat-sub">Маржа {margin}%</div></div>
