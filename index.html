@@ -929,8 +929,8 @@ function Managers({ orders }) {
 }
 
 // ─── APP ──────────────────────────────────────────────────────────────────
-const loadCache = (key) => { try { return JSON.parse(sessionStorage.getItem(key) || '[]'); } catch { return []; } };
-const saveCache = (key, data) => { try { sessionStorage.setItem(key, JSON.stringify(data)); } catch {} };
+const loadCache = (key) => { try { return JSON.parse(sessionStorage.getItem(key) || '[]'); } catch(e) { return []; } };
+const saveCache = (key, data) => { try { sessionStorage.setItem(key, JSON.stringify(data)); } catch(e) {} };
 
 function App() {
   const [clients, setClients] = useState(() => loadCache('yucca_clients'));
