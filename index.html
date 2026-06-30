@@ -785,23 +785,10 @@ function ClientSearch({ clients, value, onChange }) {
 }
 
 // ─── SALARY CALC ─────────────────────────────────────────────────────────
-// Правила: 5% стандарт; 7% если в день 3+ заказов И сумма дня >= 1000$
+// Ставка: 5% с каждого заказа
 const calcSalary = (orders) => {
-  const done = orders.filter(o => o.status === 'выполнен' || o.status === 'Доставлен');
-  // группируем выполненные заказы по дате
-  const byDay = {};
-  done.forEach(o => {
-    const day = fmtDate(o.date);
-    if (!byDay[day]) byDay[day] = [];
-    byDay[day].push(o);
-  });
-  // определяем ставку для каждого заказа
   const rates = {};
-  Object.values(byDay).forEach(dayOrders => {
-    const total = dayOrders.reduce((s, o) => s + o.sellPrice, 0);
-    const rate = (total >= 1000 && dayOrders.length >= 3) ? 0.07 : 0.05;
-    dayOrders.forEach(o => { rates[o.id] = rate; });
-  });
+  orders.forEach(o => { rates[o.id] = 0.05; });
   return rates;
 };
 
@@ -833,11 +820,9 @@ function Managers({ orders }) {
   const byMgr = {};
   filtered.forEach(o => {
     const m = o.manager || '—';
-    if (!byMgr[m]) byMgr[m] = { orders: [], salary5: 0, salary7: 0 };
+    if (!byMgr[m]) byMgr[m] = { orders: [], salary: 0 };
     byMgr[m].orders.push(o);
-    const rate = rates[o.id] || 0.05;
-    if (rate === 0.07) byMgr[m].salary7 += o.sellPrice * 0.07;
-    else byMgr[m].salary5 += o.sellPrice * 0.05;
+    byMgr[m].salary += o.sellPrice * 0.05;
   });
 
   // детализация по дням для выбранного менеджера
@@ -850,7 +835,7 @@ function Managers({ orders }) {
     byDay[d].push(o);
   });
 
-  const totalSalary = Object.values(byMgr).reduce((s, m) => s + m.salary5 + m.salary7, 0);
+  const totalSalary = Object.values(byMgr).reduce((s, m) => s + m.salary, 0);
 
   return (
     <div>
@@ -868,9 +853,8 @@ function Managers({ orders }) {
       </div>
 
       {/* Правила */}
-      <div style={{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:10,padding:'12px 16px',marginBottom:20,fontSize:12,color:'var(--text-dim)',display:'flex',gap:20,flexWrap:'wrap'}}>
-        <span>⚡ <b style={{color:'var(--gold)'}}>7%</b> — день с 3+ заказами на $1000+</span>
-        <span>📌 <b style={{color:'var(--text-dim)'}}>5%</b> — все остальные заказы</span>
+      <div style={{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:10,padding:'12px 16px',marginBottom:20,fontSize:12,color:'var(--text-dim)'}}>
+        <span>📌 Ставка: <b style={{color:'var(--gold)'}}>5%</b> с каждого выполненного заказа</span>
       </div>
 
       {/* Итого */}
@@ -884,15 +868,13 @@ function Managers({ orders }) {
       <div className="card" style={{marginBottom:16}}>
         {Object.keys(byMgr).length === 0 ? <div className="empty"><div className="empty-icon">💼</div><p>Нет выполненных заказов</p></div> :
         <div className="table-wrap"><table>
-          <thead><tr><th>Менеджер</th><th>Заказов</th><th>Выручка</th><th>По 5%</th><th>По 7%</th><th>Итого ЗП</th><th></th></tr></thead>
-          <tbody>{Object.entries(byMgr).sort((a,b)=>(b[1].salary5+b[1].salary7)-(a[1].salary5+a[1].salary7)).map(([mgr,d])=>(
+          <thead><tr><th>Менеджер</th><th>Заказов</th><th>Выручка</th><th>ЗП (5%)</th><th></th></tr></thead>
+          <tbody>{Object.entries(byMgr).sort((a,b)=>b[1].salary-a[1].salary).map(([mgr,d])=>(
             <tr key={mgr}>
               <td style={{fontWeight:500}}>{mgr}</td>
               <td>{d.orders.length}</td>
               <td className="amount-pos">{fmt(d.orders.reduce((s,o)=>s+o.sellPrice,0))} $</td>
-              <td style={{color:'var(--text-dim)',fontSize:12}}>{fmt(d.salary5)} $</td>
-              <td style={{color:'var(--gold)',fontSize:12}}>{fmt(d.salary7)} $</td>
-              <td style={{fontWeight:600,color:'var(--green)'}}>{fmt(d.salary5+d.salary7)} $</td>
+              <td style={{fontWeight:600,color:'var(--green)'}}>{fmt(d.salary)} $</td>
               <td><button className="btn btn-ghost btn-sm" onClick={()=>setSelectedMgr(selectedMgr===mgr?null:mgr)}>детали</button></td>
             </tr>
           ))}</tbody>
@@ -904,23 +886,17 @@ function Managers({ orders }) {
         <div className="card">
           <div className="card-title">Детализация — {selectedMgr}</div>
           <div className="table-wrap"><table>
-            <thead><tr><th>Дата</th><th>Заказов в день</th><th>Сумма дня</th><th>Ставка</th><th>Заказ</th><th>Продажа</th><th>ЗП с заказа</th></tr></thead>
-            <tbody>{Object.entries(byDay).sort((a,b)=>b[0].localeCompare(a[0])).flatMap(([day, dayOrders])=>{
-              const dayTotal = dayOrders.reduce((s,o)=>s+o.sellPrice,0);
-              const dayAll = filtered.filter(o=>fmtDate(o.date)===day);
-              const rate = (dayAll.reduce((s,o)=>s+o.sellPrice,0) >= 1000 && dayAll.length >= 3) ? 0.07 : 0.05;
-              return dayOrders.map((o,i)=>(
+            <thead><tr><th>Дата</th><th>Заказ</th><th>Продажа</th><th>ЗП (5%)</th></tr></thead>
+            <tbody>{Object.entries(byDay).sort((a,b)=>b[0].localeCompare(a[0])).flatMap(([day, dayOrders])=>(
+              dayOrders.map((o,i)=>(
                 <tr key={o.id}>
                   {i===0 && <td rowSpan={dayOrders.length} style={{verticalAlign:'top',paddingTop:14}}>{day}</td>}
-                  {i===0 && <td rowSpan={dayOrders.length} style={{verticalAlign:'top',paddingTop:14}}>{dayAll.length}</td>}
-                  {i===0 && <td rowSpan={dayOrders.length} style={{verticalAlign:'top',paddingTop:14}}>{fmt(dayAll.reduce((s,o)=>s+o.sellPrice,0))} $</td>}
-                  {i===0 && <td rowSpan={dayOrders.length} style={{verticalAlign:'top',paddingTop:14}}><span className={`badge ${rate===0.07?'badge-gold':'badge-gray'}`}>{(rate*100).toFixed(0)}%</span></td>}
                   <td style={{color:'var(--text-dim)',fontSize:12}}>{o.item}</td>
                   <td className="amount-pos">{fmt(o.sellPrice)} $</td>
-                  <td style={{color:'var(--green)',fontWeight:500}}>{fmt(o.sellPrice*rate)} $</td>
+                  <td style={{color:'var(--green)',fontWeight:500}}>{fmt(o.sellPrice*0.05)} $</td>
                 </tr>
-              ));
-            })}</tbody>
+              ))
+            ))}</tbody>
           </table></div>
         </div>
       )}
