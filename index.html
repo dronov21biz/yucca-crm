@@ -931,7 +931,8 @@ function App() {
       .then(function(results) {
         var c = results[0]; var o = results[1]; var e = results[2];
         var cl = (Array.isArray(c)?c:[]).map(function(x){ return Object.assign({},x,{vip:x.vip==='true'||x.vip===true, phone:(String(x.phone||'')).replace(/^'+/,'')}); });
-        var or2 = (Array.isArray(o)?o:[]).map(function(x){ return Object.assign({},x,{sellPrice:+x.sellPrice||0, buyPrice:+x.buyPrice||0, deliveryCost:+x.deliveryCost||0}); });
+        var fixDate = function(d){ if(!d) return ''; var s=String(d); if(s.length>10){ var dt=new Date(s); if(!isNaN(dt)) return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); } return s.slice(0,10); };
+        var or2 = (Array.isArray(o)?o:[]).map(function(x){ return Object.assign({},x,{sellPrice:+x.sellPrice||0, buyPrice:+x.buyPrice||0, deliveryCost:+x.deliveryCost||0, date:fixDate(x.date)}); });
         var ex2 = (Array.isArray(e)?e:[]).map(function(x){ return Object.assign({},x,{amount:+x.amount||0}); });
         setClients(cl); saveCache('yucca_clients', cl);
         setOrders(or2); saveCache('yucca_orders', or2);
