@@ -222,7 +222,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyBk35LW1Zr5-Um_bBTn3iD
 // ─── HELPERS ─────────────────────────────────────────────────────────────
 const uid = () => Math.random().toString(36).slice(2, 9);
 const fmt = (n) => new Intl.NumberFormat('ru-RU').format(Math.round(n || 0));
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
 const MONTHS = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
 const monthKey = (d) => d ? d.slice(0,7) : '';
 const API_READY = API_URL !== 'YOUR_SCRIPT_URL_HERE';
@@ -442,7 +442,7 @@ function Orders({ orders, setOrders, clients }) {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterCity, setFilterCity] = useState('');
   const [filterMonth, setFilterMonth] = useState('');
-  const emptyForm = { clientId:'', clientName:'', city:'', item:'', supplier:'', sellPrice:'', buyPrice:'', deliveryCost:'', currency:'USD', status:'Принят', manager:'', date:today(), notes:'' };
+  const emptyForm = { clientId:'', clientName:'', city:'', item:'', supplier:'', sellPrice:'', buyPrice:'', deliveryCost:'', currency:'USD', status:'Принят', manager:'Самран', date:today(), notes:'' };
   const [form, setForm] = useState(emptyForm);
   const cities = [...new Set(orders.map(o=>o.city).filter(Boolean))];
   const allMonths = useMemo(() => {
@@ -461,9 +461,12 @@ function Orders({ orders, setOrders, clients }) {
     setForm({ clientId:o.clientId||'', clientName:o.clientName||'', city:o.city||'', item:o.item||'', supplier:o.supplier||'', sellPrice:o.sellPrice||'', buyPrice:o.buyPrice||'', deliveryCost:o.deliveryCost||'', currency:o.currency||'USD', status:o.status||'новый', manager:o.manager||'', date:o.date||today(), notes:o.notes||'' });
     setShowModal(true);
   };
-  const closeModal = () => { setShowModal(false); setEditId(null); setForm(emptyForm); setSaving(false); };
+  const [formErr, setFormErr] = useState('');
+  const closeModal = () => { setShowModal(false); setEditId(null); setForm(emptyForm); setSaving(false); setFormErr(''); };
   const save = () => {
-    if(!form.item || !form.sellPrice) return;
+    if(!form.item) { setFormErr('Укажите состав / название букета'); return; }
+    if(!form.sellPrice) { setFormErr('Укажите цену продажи'); return; }
+    setFormErr('');
     setSaving(true);
     const client = clients.find(c=>c.id===form.clientId);
     const base = { ...form, sellPrice: +form.sellPrice, buyPrice: +form.buyPrice, deliveryCost: +form.deliveryCost||0, clientName: client ? (client.name || client.phone) : form.clientName, city: client ? client.city : form.city };
@@ -493,7 +496,7 @@ function Orders({ orders, setOrders, clients }) {
         <div className="table-wrap"><table><thead><tr><th>Дата</th><th>Клиент</th><th className="hide-mob">Товар</th><th className="hide-mob">Поставщик</th><th className="hide-mob">Город</th><th>Продажа</th><th className="hide-mob">Закупка</th><th className="hide-mob">Доставка</th><th className="hide-mob">Маржа</th><th className="hide-mob">Менеджер</th><th>Статус</th><th></th></tr></thead><tbody>{filtered.map(o=>(<tr key={o.id}><td>{fmtDate(o.date)}</td><td>{o.clientName}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.item}</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.supplier}</td><td className="hide-mob">{o.city}</td><td className="amount-pos">{fmt(o.sellPrice)} $</td><td className="hide-mob amount-neg">{fmt(o.buyPrice)} $</td><td className="hide-mob" style={{color:'var(--text-dim)'}}>{o.deliveryCost>0?fmt(o.deliveryCost)+' $':'—'}</td><td className={`hide-mob ${o.sellPrice-o.buyPrice>=0?'amount-pos':'amount-neg'}`}>{fmt(o.sellPrice-o.buyPrice)} $</td><td className="hide-mob">{o.manager}</td><td><StatusBadge status={o.status}/></td><td style={{display:'flex',gap:4}}><button className="btn btn-ghost btn-sm" onClick={()=>openEdit(o)}>✏️</button><button className="btn btn-ghost btn-sm" onClick={()=>del(o.id)}>✕</button></td></tr>))}</tbody></table></div>}
       </div>
       {showModal && (
-        <Modal title={editId ? 'Редактировать заказ' : 'Новый заказ'} onClose={closeModal} footer={<><button className="btn btn-ghost" onClick={closeModal} disabled={saving}>Отмена</button><button className="btn btn-gold" onClick={save} disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить'}</button></>}>
+        <Modal title={editId ? 'Редактировать заказ' : 'Новый заказ'} onClose={closeModal} footer={<><div style={{flex:1}}>{formErr && <span style={{color:'var(--red)',fontSize:12}}>⚠️ {formErr}</span>}</div><button className="btn btn-ghost" onClick={closeModal} disabled={saving}>Отмена</button><button className="btn btn-gold" onClick={save} disabled={saving}>{saving ? 'Сохранение...' : 'Сохранить'}</button></>}>
           <div className="form-grid">
             <div className="form-group"><label>Клиент</label><ClientSearch clients={clients} value={form.clientId} onChange={c => setForm(f=>({...f, clientId:c.id, clientName:c.name||c.phone, city:c.city||f.city}))}/></div>
             <div className="form-group"><label>Дата</label><input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))}/></div>
@@ -924,28 +927,18 @@ function App() {
 
   useEffect(() => {
     if (!API_READY) return;
-    Promise.all([
-      apiLoad('clients').then(function(d){ window._dbgC = Array.isArray(d)?d.length:'not array'; return d; }).catch(function(e){ window._dbgC = 'ERR:'+e; return []; }),
-      apiLoad('orders').then(function(d){ window._dbgO = Array.isArray(d)?d.length:'not array'; return d; }).catch(function(e){ window._dbgO = 'ERR:'+e; return []; }),
-      apiLoad('expenses').then(function(d){ window._dbgE = Array.isArray(d)?d.length:'not array'; return d; }).catch(function(e){ window._dbgE = 'ERR:'+e; return []; })
-    ])
+    Promise.all([apiLoad('clients'), apiLoad('orders'), apiLoad('expenses')])
       .then(function(results) {
         var c = results[0]; var o = results[1]; var e = results[2];
-        try {
-          var cl = (Array.isArray(c)?c:[]).map(function(x){ return Object.assign({},x,{vip:x.vip==='true'||x.vip===true, phone:(String(x.phone||'')).replace(/^'+/,'')}); });
-          var or2 = (Array.isArray(o)?o:[]).map(function(x){ return Object.assign({},x,{sellPrice:+x.sellPrice||0, buyPrice:+x.buyPrice||0, deliveryCost:+x.deliveryCost||0}); });
-          var ex2 = (Array.isArray(e)?e:[]).map(function(x){ return Object.assign({},x,{amount:+x.amount||0}); });
-          window._dbgMap = 'C:'+cl.length+' O:'+or2.length+' E:'+ex2.length;
-          setClients(cl); saveCache('yucca_clients', cl);
-          setOrders(or2); saveCache('yucca_orders', or2);
-          setExpenses(ex2); saveCache('yucca_expenses', ex2);
-          setSynced(true);
-        } catch(err) {
-          window._dbgMap = 'MAP_ERR:'+err;
-          setSynced(false);
-        }
+        var cl = (Array.isArray(c)?c:[]).map(function(x){ return Object.assign({},x,{vip:x.vip==='true'||x.vip===true, phone:(String(x.phone||'')).replace(/^'+/,'')}); });
+        var or2 = (Array.isArray(o)?o:[]).map(function(x){ return Object.assign({},x,{sellPrice:+x.sellPrice||0, buyPrice:+x.buyPrice||0, deliveryCost:+x.deliveryCost||0}); });
+        var ex2 = (Array.isArray(e)?e:[]).map(function(x){ return Object.assign({},x,{amount:+x.amount||0}); });
+        setClients(cl); saveCache('yucca_clients', cl);
+        setOrders(or2); saveCache('yucca_orders', or2);
+        setExpenses(ex2); saveCache('yucca_expenses', ex2);
+        setSynced(true);
       })
-      .catch(function(err){ window._dbgAll = 'ALL_ERR:'+err; setSynced(false); })
+      .catch(function(){ setSynced(false); })
       .finally(function(){ setLoading(false); });
   }, []);
 
